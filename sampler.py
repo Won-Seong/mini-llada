@@ -38,7 +38,7 @@ class Sampler():
             n_keep = min(n_keep, L) # Max n_keep is L
 
             x_next = x.clone()
-            x_next[:, prompt_len:] = self.pred_ids
+            x_next[:, prompt_len:] = pred_ids
 
             if n_keep < L:
                 _, keep_indices = torch.topk(confidence, k=n_keep, dim=-1)

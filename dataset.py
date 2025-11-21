@@ -5,13 +5,13 @@ from datasets import load_dataset
 
 class PreTokenizedDataset(Dataset):
     def __init__(self, input_ids_list):
-        self.input_ids_list = input_ids_list
+        self.input_ids = torch.tensor(input_ids_list, dtype=torch.long)
 
     def __len__(self):
-        return len(self.input_ids_list)
+        return len(self.input_ids)
 
     def __getitem__(self, idx):
-        return torch.tensor(self.input_ids_list[idx], dtype=torch.long)
+        return self.input_ids[idx]
 
 def get_tokenizer(model_name="EleutherAI/polyglot-ko-1.3b"):
     tokenizer = AutoTokenizer.from_pretrained(model_name)

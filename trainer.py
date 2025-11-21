@@ -53,8 +53,9 @@ def main():
         dataset, 
         batch_size=CONFIG['batch_size'], 
         shuffle=True, 
-        num_workers=2, 
-        pin_memory=True
+        num_workers=4, 
+        pin_memory=True,
+        persistent_workers=True
     )
 
     network = Transformer(
@@ -106,7 +107,7 @@ def main():
             save_name = "mini_llada.pth"
             save_path = os.path.join(args.output_dir, save_name)
             torch.save(unwrapped_model.state_dict(), save_path)
-            accelerator.print("💾 Model Saved.: {save_path}")
+            accelerator.print(f"💾 Model Saved.: {save_path}")
 
 if __name__ == "__main__":
     main()

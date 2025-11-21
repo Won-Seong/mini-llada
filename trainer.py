@@ -33,7 +33,7 @@ def main():
         pin_memory=True
     )
 
-    network = MiniLLaDA(
+    network = Transformer(
         vocab_size=len(tokenizer),
         dim=CONFIG["dim"], 
         depth=CONFIG["depth"], 

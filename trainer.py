@@ -55,9 +55,8 @@ def main():
         dataset, 
         batch_size=CONFIG['batch_size'], 
         shuffle=True, 
-        num_workers=4, 
-        pin_memory=True,
-        persistent_workers=True
+        num_workers=0, 
+        pin_memory=True
     )
 
     network = Transformer(
@@ -70,8 +69,8 @@ def main():
     )
 
     model = DiffusionModel(network)
-    
     init_weights(model)
+    model = torch.compile(model)
 
     optimizer = optim.AdamW(model.parameters(), lr=CONFIG['learning_rate'])
 
@@ -96,7 +95,7 @@ def main():
             
             total_loss += loss.item()
             
-            if step % 10 == 0:
+            if step % 50 == 0:
                 avg_step_loss = total_loss / (step + 1)
                 accelerator.print(f"\rEpoch {epoch+1} | Step {step}/{len(dataloader)} | Loss: {avg_step_loss:.4f}", end="")
         

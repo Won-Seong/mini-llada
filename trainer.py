@@ -55,7 +55,7 @@ def main():
         dataset, 
         batch_size=CONFIG['batch_size'], 
         shuffle=True, 
-        num_workers=4, 
+        num_workers=0, 
         pin_memory=True,
         persistent_workers=True
     )

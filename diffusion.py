@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 class DiffusionModel(nn.Module):
     def __init__(self, network: nn.Module):
@@ -31,10 +32,12 @@ class DiffusionModel(nn.Module):
     def loss(self, x, noisy_x, mask_indices):
         logits = self.reverse_process(noisy_x)
 
-        # Compute loss only on masked positions
-        loss_fn = nn.CrossEntropyLoss()
-        masked_logits = logits[mask_indices.bool()] # Shape: [N_masked, vocab_size]
-        masked_targets = x[mask_indices.bool()]    # Shape: [N_masked]
-
-        loss = loss_fn(masked_logits, masked_targets)
+        B, L, V = logits.shape
+        
+        logits_flat = logits.view(-1, V)
+        target_flat = x.view(-1)
+        
+        target_flat = torch.where(mask_indices.view(-1), target_flat, -100)
+        
+        loss = F.cross_entropy(logits_flat, target_flat) 
         return loss

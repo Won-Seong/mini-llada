@@ -1,10 +1,9 @@
-CONFIG:
-  dim: 1024,
-  depth: 12,
-  heads: 16,
-  intermediate_size: 2816,
-  max_seq_len: 512,
-  batch_size: 16,
-  learning_rate: 1e-4, # [중요] 2e-3 -> 5e-5 로 대폭 낮춤 (진동 방지)
-  epochs: 10,
-  dataset_size: 20000,    # 과적합 테스트용 10개
+dim: 1024,
+depth: 12,
+heads: 16,
+intermediate_size: 2816,
+max_seq_len: 512,
+batch_size: 16,
+learning_rate: 1e-4, # [중요] 2e-3 -> 5e-5 로 대폭 낮춤 (진동 방지)
+epochs: 10,
+dataset_size: 20000,    # 과적합 테스트용 10개

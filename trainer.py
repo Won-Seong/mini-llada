@@ -5,6 +5,8 @@ from accelerate import Accelerator
 import time
 import yaml
 from tqdm import tqdm
+import argparse
+import os
 
 # 우리가 만든 모듈들 import
 from network import Transformer
@@ -12,10 +14,32 @@ from dataset import get_tokenizer, prepare_data
 from diffusion import DiffusionModel
 from helper import init_weights
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Mini LLaDA Trainer")
+    
+    parser.add_argument(
+        "--output_dir", 
+        type=str, 
+        default="./checkpoints", 
+        help="Directory to save model checkpoints"
+    )
+
+    parser.add_argument(
+        "--save_every", 
+        type=int, 
+        default=1, 
+        help="How many epochs between saving model checkpoints"
+    )
+    
+    return parser.parse_args()
+
 # ==========================================
 # Training Loop
 # ==========================================
 def main():
+    args = parse_args()
+    os.makedirs(args.output_dir, exist_ok=True)
+
     with open("config.yaml", "r") as f:
         CONFIG = yaml.safe_load(f)
     
@@ -76,10 +100,13 @@ def main():
         epoch_loss = total_loss / len(dataloader)
         accelerator.print(f"\n✅ Epoch {epoch+1} Complete! Avg Loss: {epoch_loss:.4f} (소요시간: {time.time()-start_time:.1f}초)")
         
-        accelerator.wait_for_everyone()
-        unwrapped_model = accelerator.unwrap_model(model)
-        torch.save(unwrapped_model.state_dict(), "mini_llada_model.pth")
-        accelerator.print("💾 Model Saved.: mini_llada_model.pth")
+        if (epoch + 1) % args.save_every == 0 or (epoch + 1) == CONFIG['epochs']:
+            accelerator.wait_for_everyone()
+            unwrapped_model = accelerator.unwrap_model(model)
+            save_name = "mini_llada.pth"
+            save_path = os.path.join(args.output_dir, save_name)
+            torch.save(unwrapped_model.state_dict(), save_path)
+            accelerator.print("💾 Model Saved.: {save_path}")
 
 if __name__ == "__main__":
     main()

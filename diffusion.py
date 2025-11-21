@@ -6,6 +6,9 @@ class DiffusionModel(nn.Module):
         super().__init__()
         self.network = network
 
+    def forward(self, x):
+        return self.reverse_process(x)
+
     def forward_process(self, x, mask_id):
         # x is the list of the tokens, shape: [B, L]
         # mask_id is the id of the mask token
@@ -21,17 +24,17 @@ class DiffusionModel(nn.Module):
         noisy_x = torch.where(mask_indices, mask_id, x)
         return noisy_x, mask_indices
 
-    def reverse_process(self, noisy_x, mask_indices, mask_id):
-        # noisy_x is the input with masked tokens, shape: [B, L]
-        # mask_indices indicates which tokens were masked, shape: [B, L]
-        # mask_id is the id of the mask token
-        B, L = noisy_x.shape
-        device = noisy_x.device
+    def reverse_process(self, noisy_x):
+        logits = self.network(noisy_x)
+        return logits
 
-        # Predict the original tokens using the network
-        logits = self.network(noisy_x) # Shape: [B, L, vocab_size]
-        predicted_tokens = torch.argmax(logits, dim=-1) # Shape: [B, L]
+    def loss(self, x, noisy_x, mask_indices):
+        logits = self.reverse_process(noisy_x)
 
-        # Replace only the masked positions with predicted tokens
-        reconstructed_x = torch.where(mask_indices, predicted_tokens, noisy_x)
-        return reconstructed_x
+        # Compute loss only on masked positions
+        loss_fn = nn.CrossEntropyLoss()
+        masked_logits = logits[mask_indices.bool()] # Shape: [N_masked, vocab_size]
+        masked_targets = x[mask_indices.bool()]    # Shape: [N_masked]
+
+        loss = loss_fn(masked_logits, masked_targets)
+        return loss

@@ -10,7 +10,6 @@ import os
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-# 우리가 만든 모듈들 import
 from network import Transformer
 from dataset import get_tokenizer, prepare_data
 from diffusion import DiffusionModel
@@ -31,6 +30,13 @@ def parse_args():
         type=int, 
         default=1, 
         help="How many epochs between saving model checkpoints"
+    )
+
+    parser.add_argument(
+        "--resume_path", 
+        type=str, 
+        default=None, 
+        help="Path to the checkpoint file to resume from (e.g., ./checkpoints/mini_llada.pth)"
     )
     
     return parser.parse_args()
@@ -69,7 +75,18 @@ def main():
     )
 
     model = DiffusionModel(network)
+    
     init_weights(model)
+
+    if args.resume_path:
+        if os.path.exists(args.resume_path):
+            accelerator.print(f"🔄 Resuming from checkpoint: {args.resume_path}")
+            state_dict = torch.load(args.resume_path, map_location='cpu')
+            model.load_state_dict(state_dict)
+        else:
+            raise FileNotFoundError(f"❌ Resume path provided but file not found: {args.resume_path}")
+    else:
+        accelerator.print("✨ No resume path provided. Starting from scratch.")
 
     optimizer = optim.AdamW(model.parameters(), lr=CONFIG['learning_rate'])
 
@@ -104,8 +121,10 @@ def main():
         if (epoch + 1) % args.save_every == 0 or (epoch + 1) == CONFIG['epochs']:
             accelerator.wait_for_everyone()
             unwrapped_model = accelerator.unwrap_model(model)
+            
             save_name = "mini_llada.pth"
             save_path = os.path.join(args.output_dir, save_name)
+            
             torch.save(unwrapped_model.state_dict(), save_path)
             accelerator.print(f"💾 Model Saved.: {save_path}")
 

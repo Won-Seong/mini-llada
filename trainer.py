@@ -8,6 +8,8 @@ from tqdm import tqdm
 import argparse
 import os
 
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 # 우리가 만든 모듈들 import
 from network import Transformer
 from dataset import get_tokenizer, prepare_data

@@ -7,7 +7,7 @@ import yaml
 from tqdm import tqdm
 
 # 우리가 만든 모듈들 import
-from network import MiniLLaDA
+from network import Transformer
 from dataset import get_tokenizer, prepare_data
 from diffusion import DiffusionModel
 from helper import init_weights

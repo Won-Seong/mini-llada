@@ -19,7 +19,7 @@ class DiffusionModel(nn.Module):
         t = torch.rand(B, device=device) # Random time steps for each sample in the batch
         mask_probs = t.unsqueeze(1).expand(B, L) # Shape: [B, L]
         random_matrix = torch.rand(B, L, device=device) # Shape: [B, L]
-        mask_indices = (random_matrix < mask_probs).long() # Shape: [B, L]
+        mask_indices = (random_matrix < mask_probs) # Shape: [B, L]
 
         noisy_x = torch.where(mask_indices, mask_id, x)
         return noisy_x, mask_indices

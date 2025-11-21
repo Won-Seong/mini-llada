@@ -70,7 +70,6 @@ def main():
 
     model = DiffusionModel(network)
     init_weights(model)
-    model = torch.compile(model)
 
     optimizer = optim.AdamW(model.parameters(), lr=CONFIG['learning_rate'])
 

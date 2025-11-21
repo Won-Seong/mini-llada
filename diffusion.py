@@ -30,12 +30,11 @@ class DiffusionModel(nn.Module):
         return logits
 
     def loss(self, x, noisy_x, mask_indices):
-        logits = self.reverse_process(noisy_x)
+        logits = self(noisy_x) # Shape: [B, L, V]
 
         B, L, V = logits.shape
-        
-        logits_flat = logits.view(-1, V)
-        target_flat = x.view(-1)
+        logits_flat = logits.view(-1, V) # Shape: [B*L, V]
+        target_flat = x.view(-1) # Shape: [B*L]
         
         target_flat = torch.where(mask_indices.view(-1), target_flat, -100)
         

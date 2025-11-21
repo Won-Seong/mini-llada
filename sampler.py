@@ -9,7 +9,8 @@ class Sampler():
         self.device = next(model.parameters()).device
 
     @torch.no_grad()
-    def generate(self, prompt_text, steps: int = 32, gen_len: int = 32, print_progress: bool = False):
+    def generate(self, prompt_text, steps: int = 32, gen_len: int = 32, temperature=1.0,
+                 print_progress: bool = False):
         self.model.eval()
 
         prompts_ids = self.tokenizer.encode(prompt_text, return_tensors='pt').to(self.device) # Shape: [1, L]
@@ -28,9 +29,14 @@ class Sampler():
             # Unmasking
             logits = self.model(x)
             gen_logits = logits[:, prompt_len:, :] # Shape: [1, L, vocab_size]
-            probs = torch.softmax(gen_logits / 1.0, dim=-1) # Temperature = 1.0
-            pred_ids = torch.argmax(probs, dim=-1) # Shape: [1, L]
-            confidence = torch.max(probs, dim=-1).values # Shape: [1, L]
+            if temperature > 0:
+                probs = torch.softmax(gen_logits / temperature, dim=-1)
+                pred_ids = torch.multinomial(probs.view(-1, probs.size(-1)), num_samples=1).view(1, L) 
+                confidence = torch.gather(probs, -1, pred_ids.unsqueeze(-1)).squeeze(-1)
+            else:
+                probs = torch.softmax(gen_logits, dim=-1)
+                pred_ids = torch.argmax(probs, dim=-1)
+                confidence = torch.max(probs, dim=-1).values
 
             # Remasking
             n_keep = int(L * (1 - s))

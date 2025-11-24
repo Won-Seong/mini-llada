@@ -103,8 +103,8 @@ def main():
         for step, batch in enumerate(dataloader):
             optimizer.zero_grad()
             
-            noisy_batch, mask_indices = model.forward_process(batch, mask_id)
-            loss = model.loss(batch, noisy_batch, mask_indices)
+            t, noisy_batch, mask_indices = model.forward_process(batch, mask_id)
+            loss = model.loss(batch, t, noisy_batch, mask_indices)
             
             accelerator.backward(loss)
             optimizer.step()

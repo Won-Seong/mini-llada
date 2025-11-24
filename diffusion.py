@@ -23,13 +23,13 @@ class DiffusionModel(nn.Module):
         mask_indices = (random_matrix < mask_probs) # Shape: [B, L]
 
         noisy_x = torch.where(mask_indices, mask_id, x)
-        return noisy_x, mask_indices
+        return t, noisy_x, mask_indices
 
     def reverse_process(self, noisy_x):
         logits = self.network(noisy_x)
         return logits
 
-    def loss(self, x, noisy_x, mask_indices):
+    def loss(self, x, t, noisy_x, mask_indices):
         logits = self(noisy_x) # Shape: [B, L, V]
 
         B, L, V = logits.shape
@@ -38,5 +38,5 @@ class DiffusionModel(nn.Module):
         
         target_flat = torch.where(mask_indices.view(-1), target_flat, -100)
         
-        loss = F.cross_entropy(logits_flat, target_flat) 
+        loss = F.cross_entropy(logits_flat, target_flat) * (1 / t) 
         return loss

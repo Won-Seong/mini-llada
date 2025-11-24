@@ -13,11 +13,12 @@ class Sampler():
                  print_progress: bool = False):
         self.model.eval()
 
-        prompts_ids = self.tokenizer.encode(prompt_text, return_tensors='pt').to(self.device) # Shape: [1, L]
+        prompts_ids = self.tokenizer.encode(prompt_text, return_tensors='pt').to(self.device) # Shape: [1, prompt_len]
         mask_tokens = torch.full((1, gen_len), self.mask_id, dtype=torch.long, device=self.device) # Shape: [1, gen_len]
         x = torch.cat([prompts_ids, mask_tokens], dim=1)
-        L = gen_len # Length of the generated part
-        prompt_len = prompts_ids.size(1)
+        L = x.size(1) # Total length (prompt + gen_len)
+        prompt_len = prompts_ids.size(1) # Length of the prompt
+        gen_len = mask_tokens.size(1) # Length of the generation part
 
         timesteps = torch.linspace(1, 0, steps + 1)[:-1] # Shape: [steps]
 
@@ -28,7 +29,7 @@ class Sampler():
             
             # Unmasking
             logits = self.model(x)
-            gen_logits = logits[:, prompt_len:, :] # Shape: [1, L, vocab_size]
+            gen_logits = logits[:, prompt_len:, :] # Shape: [1, gen_len, vocab_size]
             if temperature > 0:
                 probs = torch.softmax(gen_logits / temperature, dim=-1)
                 pred_ids = torch.multinomial(probs.view(-1, probs.size(-1)), num_samples=1).view(1, L) 
@@ -39,9 +40,8 @@ class Sampler():
                 confidence = torch.max(probs, dim=-1).values
 
             # Remasking
-            n_keep = int(L * (1 - s))
-            n_keep = max(n_keep, int(L * (1 - t)) + 1)
-            n_keep = min(n_keep, L) # Max n_keep is L
+            n_remask = min(int(gen_len * (s / t)), gen_len)
+            n_keep = int(gen_len - n_remask)
 
             x_next = x.clone()
             x_next[:, prompt_len:] = pred_ids

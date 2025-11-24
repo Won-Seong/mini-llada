@@ -32,7 +32,7 @@ class Sampler():
             gen_logits = logits[:, prompt_len:, :] # Shape: [1, gen_len, vocab_size]
             if temperature > 0:
                 probs = torch.softmax(gen_logits / temperature, dim=-1)
-                pred_ids = torch.multinomial(probs.view(-1, probs.size(-1)), num_samples=1).view(1, L) 
+                pred_ids = torch.multinomial(probs.view(-1, probs.size(-1)), num_samples=1).view(1, gen_len) 
                 confidence = torch.gather(probs, -1, pred_ids.unsqueeze(-1)).squeeze(-1)
             else:
                 probs = torch.softmax(gen_logits, dim=-1)

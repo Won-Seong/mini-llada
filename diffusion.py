@@ -38,5 +38,10 @@ class DiffusionModel(nn.Module):
         
         target_flat = torch.where(mask_indices.view(-1), target_flat, -100)
         
-        loss = F.cross_entropy(logits_flat, target_flat) * (1 / t) 
-        return loss
+        token_losses = F.cross_entropy(logits_flat, target_flat, reduction='none')
+        t_expanded = t.view(B, 1).expand(B, L).reshape(-1)
+        t_safe = torch.clamp(t_expanded, min=1e-4)
+        
+        weighted_losses = token_losses * (1.0 / t_safe)
+        
+        return weighted_losses.mean()

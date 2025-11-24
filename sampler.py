@@ -46,13 +46,13 @@ class Sampler():
             x_next = x.clone()
             x_next[:, prompt_len:] = pred_ids
 
-            if n_keep < L:
+            if n_keep < gen_len:
                 _, keep_indices = torch.topk(confidence, k=n_keep, dim=-1)
-                new_mask_section = torch.full((1, L), self.mask_id, device=self.device)
+                new_mask_section = torch.full((1, gen_len), self.mask_id, device=self.device)
                 new_mask_section.scatter_(1, keep_indices, pred_ids.gather(1, keep_indices))
                 x[:, prompt_len:] = new_mask_section
             else:
-                # n_keep == L, no masking needed
+                # n_keep == gen_len, no masking needed
                 x = x_next
 
             if print_progress:

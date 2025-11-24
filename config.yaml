@@ -1,6 +1,6 @@
 dim: 512
-depth: 8
-heads: 12
+depth: 12
+heads: 16
 intermediate_size: 1024
 max_seq_len: 512
 batch_size: 16

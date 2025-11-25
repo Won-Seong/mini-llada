@@ -41,10 +41,12 @@ class DiffusionModel(nn.Module):
             # mask가 1이면(진짜 데이터) 유지, 0이면(패딩) -100
             target_flat = torch.where(attention_mask.view(-1).bool(), target_flat, -100)
         
-        token_losses = F.cross_entropy(logits_flat, target_flat, reduction='none')
-        t_expanded = t.view(B, 1).expand(B, L).reshape(-1)
-        t_safe = torch.clamp(t_expanded, min=1e-4)
+        return F.cross_entropy(logits_flat, target_flat)
+
+        #token_losses = F.cross_entropy(logits_flat, target_flat, reduction='none')
+        #t_expanded = t.view(B, 1).expand(B, L).reshape(-1)
+        #t_safe = torch.clamp(t_expanded, min=1e-4)
         
-        weighted_losses = token_losses * (1.0 / t_safe)
+        #weighted_losses = token_losses * (1.0 / t_safe)
         
-        return weighted_losses.sum() / (token_losses > 0).sum().clamp(min=1)
+        #return weighted_losses.sum() / (token_losses > 0).sum().clamp(min=1)

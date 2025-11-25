@@ -28,9 +28,9 @@ def prepare_data(tokenizer, max_seq_len=512):
     print("⏳ 데이터셋 로드 및 처리 중...")
     
     # 1. 데이터셋들을 로드하고 합칩니다.
-    wiki_data = load_dataset("maywell/ko_wikidata_QA", split="train[:10000]")
-    gpt_data = load_dataset("maywell/ko-gpt3_14k", split="train[:10000]")
-    alpaca_data = load_dataset("beomi/KoAlpaca-v1.1a", split="train[:10000]")
+    wiki_data = load_dataset("maywell/ko_wikidata_QA", split="train[:300]")
+    gpt_data = load_dataset("maywell/ko-gpt3_14k", split="train[:300]")
+    alpaca_data = load_dataset("beomi/KoAlpaca-v1.1a", split="train[:300]")
     
     # 2. 포맷팅 함수 (제너레이터로 처리해서 메모리 아낌)
     def format_wiki(example): return {'text': f"질문: {example['instruction']} 답변: {example['output']}"}

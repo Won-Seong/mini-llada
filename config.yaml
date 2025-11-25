@@ -1,9 +1,9 @@
-dim: 512
+dim: 768
 depth: 12
 heads: 16
 intermediate_size: 1024
-max_seq_len: 512
-batch_size: 16
+max_seq_len: 128
+batch_size: 32
 learning_rate: 0.001
 epochs: 100
-dataset_size: 21000 
+dataset_size: None

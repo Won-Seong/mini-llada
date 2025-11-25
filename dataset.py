@@ -24,14 +24,8 @@ def get_tokenizer(model_name="EleutherAI/polyglot-ko-1.3b"):
         
     return tokenizer
 
-def prepare_data(tokenizer, max_seq_len=512, dataset_size=None):
-    
-    
+def prepare_data(tokenizer, max_seq_len=512):
     dataset = load_dataset("beomi/KoAlpaca-v1.1a", split="train")
-    
-    
-    if dataset_size:
-        dataset = dataset.select(range(min(len(dataset), dataset_size)))
     
     # 질문-답변 포맷팅
     texts = [f"질문: {item['instruction']} 답변: {item['output']}" for item in dataset]

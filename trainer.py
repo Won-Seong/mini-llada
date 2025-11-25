@@ -57,7 +57,7 @@ def main():
     accelerator.print(f"🚀 Training Start! Device: {accelerator.device}")
 
     tokenizer = get_tokenizer()
-    dataset = prepare_data(tokenizer, max_seq_len=CONFIG['max_seq_len'], dataset_size=CONFIG['dataset_size'])
+    dataset = prepare_data(tokenizer, max_seq_len=CONFIG['max_seq_len'])
     
     dataloader = DataLoader(
         dataset, 

@@ -107,10 +107,11 @@ def main():
         
         for step, batch in enumerate(dataloader):
             x = batch['input_ids']
+            attention_mask = batch.get('attention_mask', None)
             optimizer.zero_grad()
             
             t, noisy_x, mask_indices = model.forward_process(x, mask_id)
-            loss = model.loss(x, t, noisy_x, mask_indices)
+            loss = model.loss(x, t, noisy_x, mask_indices, attention_mask)
             
             accelerator.backward(loss)
             optimizer.step()

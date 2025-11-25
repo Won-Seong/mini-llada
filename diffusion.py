@@ -29,7 +29,7 @@ class DiffusionModel(nn.Module):
         logits = self.network(noisy_x)
         return logits
 
-    def loss(self, x, t, noisy_x, mask_indices):
+    def loss(self, x, t, noisy_x, mask_indices, attention_mask):
         logits = self(noisy_x) # Shape: [B, L, V]
 
         B, L, V = logits.shape
@@ -37,6 +37,9 @@ class DiffusionModel(nn.Module):
         target_flat = x.view(-1) # Shape: [B*L]
         
         target_flat = torch.where(mask_indices.view(-1), target_flat, -100)
+        if attention_mask is not None:
+            # mask가 1이면(진짜 데이터) 유지, 0이면(패딩) -100
+            target_flat = torch.where(attention_mask.view(-1).bool(), target_flat, -100)
         
         token_losses = F.cross_entropy(logits_flat, target_flat, reduction='none')
         t_expanded = t.view(B, 1).expand(B, L).reshape(-1)
@@ -44,4 +47,4 @@ class DiffusionModel(nn.Module):
         
         weighted_losses = token_losses * (1.0 / t_safe)
         
-        return weighted_losses.mean()
+        return weighted_losses.sum() / (token_losses > 0).sum().clamp(min=1)

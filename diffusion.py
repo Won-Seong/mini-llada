@@ -25,12 +25,12 @@ class DiffusionModel(nn.Module):
         noisy_x = torch.where(mask_indices, mask_id, x)
         return t, noisy_x, mask_indices
 
-    def reverse_process(self, noisy_x):
-        logits = self.network(noisy_x)
+    def reverse_process(self, noisy_x, attention_mask=None):
+        logits = self.network(noisy_x,  attention_mask=attention_mask)
         return logits
 
     def loss(self, x, t, noisy_x, mask_indices, attention_mask):
-        logits = self(noisy_x) # Shape: [B, L, V]
+        logits = self(noisy_x, attention_mask) # Shape: [B, L, V]
 
         B, L, V = logits.shape
         logits_flat = logits.view(-1, V) # Shape: [B*L, V]

@@ -12,8 +12,8 @@ class BERT_Wrapper(nn.Module):
         super().__init__()
         self.bert_model = bert_model
 
-    def forward(self, x):
-        outputs = self.bert_model(input_ids=x)
+    def forward(self, x, attention_mask=None):
+        outputs = self.bert_model(input_ids=x, attention_mask=attention_mask)
         return outputs.logits
 
 class Attention(nn.Module):

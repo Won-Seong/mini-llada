@@ -19,8 +19,7 @@ def get_tokenizer(model_name):
     if tokenizer.mask_token is None:
         tokenizer.add_special_tokens({'mask_token': '[MASK]'})
     
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.pad_token = tokenizer.eos_token
         
     return tokenizer
 

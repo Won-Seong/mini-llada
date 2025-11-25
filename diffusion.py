@@ -7,8 +7,8 @@ class DiffusionModel(nn.Module):
         super().__init__()
         self.network = network
 
-    def forward(self, x):
-        return self.reverse_process(x)
+    def forward(self, x, attention_mask=None):
+        return self.reverse_process(x, attention_mask)
 
     def forward_process(self, x, mask_id):
         # x is the list of the tokens, shape: [B, L]

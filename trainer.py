@@ -63,8 +63,9 @@ def main():
         dataset, 
         batch_size=CONFIG['batch_size'], 
         shuffle=True, 
-        num_workers=0, 
-        pin_memory=True
+        num_workers=4, 
+        pin_memory=True,
+        persistent_workers=True
     )
 
     # network = Transformer(
@@ -80,7 +81,7 @@ def main():
     wrapper = BERT_Wrapper(network)
     model = DiffusionModel(wrapper)
     
-    init_weights(model)
+    #init_weights(model)
 
     if args.resume_path:
         if os.path.exists(args.resume_path):

@@ -32,13 +32,15 @@ def prepare_data(tokenizer, max_seq_len=512, dataset_size=None):
     # 1. 위키백과 (지식 학습용) - 컬럼명: 'text' 등
     # 데이터가 많으니 일부만 로드 (예: 10,000개)
     print("   - 위키백과 로드 중...")
-    wiki_data = load_dataset("heegyu/kowiki-paragraphs", split="train") 
-    all_texts.extend([item['text'] for item in wiki_data])
+    wiki_data = load_dataset("maywell/ko_wikidata_QA", split="train")
+    wiki_texts = [f"질문: {item['instruction']} 답변: {item['output']}" for item in wiki_data] 
+    all_texts.extend(wiki_texts)
 
-    # 2. 교과서 (문법/상식 학습용) - 컬럼명: 'text'
+    # 2. Ko - 컬럼명: 'text'
     print("   - 교과서 데이터 로드 중...")
-    textbook_data = load_dataset("maywell/korean_textbooks", split="train")
-    all_texts.extend([item['text'] for item in textbook_data])
+    gpt_data = load_dataset("maywell/ko-gpt3_14k", split="train")
+    gpt_texts = [f"질문: {item['question']} 답변: {item['answer']}" for item in gpt_data]
+    all_texts.extend(gpt_texts)
 
     # 3. KoAlpaca (지시 수행 학습용) - 컬럼명: 'instruction', 'output'
     print("   - KoAlpaca 로드 중...")

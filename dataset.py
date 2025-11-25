@@ -16,8 +16,8 @@ class PreTokenizedDataset(Dataset):
 def get_tokenizer(model_name):
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     
-    if tokenizer.mask_token is None:
-        tokenizer.add_special_tokens({'mask_token': '[MASK]'})
+    # if tokenizer.mask_token is None:
+    #     tokenizer.add_special_tokens({'mask_token': '[MASK]'})
     
     # if tokenizer.pad_token is None:
     #     tokenizer.pad_token = tokenizer.eos_token

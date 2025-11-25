@@ -1,6 +1,20 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from rope import precompute_freqs_cis, apply_rotary_emb
+from transformers import BertForMaskedLM
+
+def get_pretrained_bert_model(model_name="klue/roberta-large"):
+    model = BertForMaskedLM.from_pretrained(model_name)
+    return model
+
+class BERT_Wrapper(nn.Module):
+    def __init__(self, bert_model: BertForMaskedLM):
+        super().__init__()
+        self.bert_model = bert_model
+
+    def forward(self, x):
+        outputs = self.bert_model(input_ids=x)
+        return outputs.logits
 
 class Attention(nn.Module):
     def __init__(self, dim, heads):

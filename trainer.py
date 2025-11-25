@@ -10,7 +10,7 @@ import os
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-from network import Transformer
+from network import get_pretrained_bert_model, BERT_Wrapper
 from dataset import get_tokenizer, prepare_data
 from diffusion import DiffusionModel
 from helper import init_weights
@@ -67,16 +67,18 @@ def main():
         pin_memory=True
     )
 
-    network = Transformer(
-        vocab_size=len(tokenizer),
-        dim=CONFIG["dim"], 
-        depth=CONFIG["depth"], 
-        heads=CONFIG["heads"],
-        intermediate_size=CONFIG["intermediate_size"],
-        max_seq_len=CONFIG["max_seq_len"]
-    )
+    # network = Transformer(
+    #     vocab_size=len(tokenizer),
+    #     dim=CONFIG["dim"], 
+    #     depth=CONFIG["depth"], 
+    #     heads=CONFIG["heads"],
+    #     intermediate_size=CONFIG["intermediate_size"],
+    #     max_seq_len=CONFIG["max_seq_len"]
+    # )
 
-    model = DiffusionModel(network)
+    network = get_pretrained_bert_model()
+    wrapper = BERT_Wrapper(network)
+    model = DiffusionModel(wrapper)
     
     init_weights(model)
 

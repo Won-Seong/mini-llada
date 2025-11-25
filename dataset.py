@@ -13,7 +13,7 @@ class PreTokenizedDataset(Dataset):
     def __getitem__(self, idx):
         return self.input_ids[idx]
 
-def get_tokenizer(model_name="EleutherAI/polyglot-ko-1.3b"):
+def get_tokenizer(model_name):
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     
     if tokenizer.mask_token is None:

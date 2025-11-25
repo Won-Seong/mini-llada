@@ -56,7 +56,7 @@ def main():
     accelerator = Accelerator(mixed_precision="bf16")
     accelerator.print(f"🚀 Training Start! Device: {accelerator.device}")
 
-    tokenizer = get_tokenizer()
+    tokenizer = get_tokenizer("klue/roberta-large")
     dataset = prepare_data(tokenizer, max_seq_len=CONFIG['max_seq_len'])
     
     dataloader = DataLoader(

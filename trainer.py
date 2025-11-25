@@ -106,10 +106,11 @@ def main():
         start_time = time.time()
         
         for step, batch in enumerate(dataloader):
+            x = batch['input_ids']
             optimizer.zero_grad()
             
-            t, noisy_batch, mask_indices = model.forward_process(batch, mask_id)
-            loss = model.loss(batch, t, noisy_batch, mask_indices)
+            t, noisy_x, mask_indices = model.forward_process(x, mask_id)
+            loss = model.loss(x, t, noisy_x, mask_indices)
             
             accelerator.backward(loss)
             optimizer.step()

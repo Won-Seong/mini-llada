@@ -12,20 +12,23 @@ max_seq_len: 512
 # q_col: 질문(Question)에 해당하는 컬럼 이름
 # a_col: 답변(Answer)에 해당하는 컬럼 이름
 dataset_config:
-  - name: maywell/ko_wikidata_QA
-    split: train
-    q_col: instruction
-    a_col: output
+  dataset_list:
+    - name: maywell/ko_wikidata_QA
+      split: train
+      q_col: instruction
+      a_col: output
 
-  - name: maywell/ko-gpt3_14k
-    split: train
-    q_col: question  # 이 데이터셋은 컬럼명이 다름!
-    a_col: answer
+    - name: maywell/ko-gpt3_14k
+      split: train
+      q_col: question  # 이 데이터셋은 컬럼명이 다름!
+      a_col: answer
 
-  - name: beomi/KoAlpaca-v1.1a
-    split: train
-    q_col: instruction
-    a_col: output
+    - name: beomi/KoAlpaca-v1.1a
+      split: train
+      q_col: instruction
+      a_col: output
+    
+  test_size: 0.1
 
 # ==========================================
 # 학습 하이퍼파라미터 (Trainer Config)

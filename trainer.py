@@ -70,7 +70,7 @@ class Trainer:
             epoch_start_time = time.time()
             total_loss = 0.0
             
-            progress_bar = tqdm(self.train_dataloader, desc=f"Epoch {epoch}/{self.config['num_epochs']}")
+            progress_bar = tqdm(self.train_dataloader, desc=f"Epoch {epoch}/{self.config['train_config']['num_epochs']}")
             for step, batch in enumerate(progress_bar):
                 with self.accelerator.accumulate(self.model):
                     x = batch['input_ids']

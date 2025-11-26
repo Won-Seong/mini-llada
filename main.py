@@ -44,7 +44,7 @@ def main():
 
     # Resume from checkpoint if provided
     if args.resume_path is not None:
-        trainer._load_checkpoint(args.resume_path)
+        trainer.load_checkpoint(args.resume_path)
 
     # Start training
     trainer.train(save_path=args.output_dir)

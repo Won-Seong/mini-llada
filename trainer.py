@@ -125,8 +125,11 @@ class Trainer:
         self.accelerator.print(f"💾 Checkpoint saved: {path}")
 
 
-    def _load_checkpoint(self, path):
-        self.accelerator.print(f"Resuming from checkpoint: {path}")
-        checkpoint = torch.load(path, map_location=self.accelerator.device)
-        self.model.load_state_dict(checkpoint['model_state_dict'])
-        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    def load_checkpoint(self, path):
+        try:
+            checkpoint = torch.load(path, map_location=self.accelerator.device)
+            self.model.load_state_dict(checkpoint['model_state_dict'])
+            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            self.accelerator.print(f"✅ Checkpoint loaded: {path} (Epoch {checkpoint['epoch']}, Valid Loss {checkpoint['valid_loss']:.4f})")
+        except Exception as e:
+            self.accelerator.print(f"❌ Failed to load checkpoint from {path}: {e}")

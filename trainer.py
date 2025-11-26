@@ -133,7 +133,7 @@ class Trainer:
             'valid_loss': valid_loss
         }
         
-        file_name = f"epoch_{epoch}_steps_{steps}_val_{valid_loss:.4f}.pt"
+        file_name = f"epoch-{epoch}-steps-{steps}.pt"
         path = os.path.join(save_path, file_name)
         
         self.accelerator.save(checkpoint, path)

@@ -25,8 +25,8 @@ def prepare_data(tokenizer, dataset_config: list[dict], max_seq_len: int = 512):
         name = config['name']
         split = config.get('split', 'train')
         limit = config.get('limit', None)
-        q_col = config['question_column']
-        a_col = config['answer_column']
+        q_col = config['q_col']
+        a_col = config['a_col']
 
         print(f"Loading dataset: {name}...")
 

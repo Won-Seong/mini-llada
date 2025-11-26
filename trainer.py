@@ -13,6 +13,9 @@ from mini_llada.models.diffusion import DiffusionModel
 class Trainer:
     def __init__(self, config:dict):
         self.config = config
+        self.global_step = 0
+        self.start_epoch = 1
+        self.best_valid_loss = float('inf')
         
         self.accelerator = Accelerator(
             mixed_precision="bf16",
@@ -65,7 +68,7 @@ class Trainer:
     def train(self, save_path:str):
         os.makedirs(save_path, exist_ok=True)
 
-        for epoch in range(1, self.config['train_config']['num_epochs'] + 1):
+        for epoch in range(self.start_epoch, self.config['train_config']['num_epochs'] + 1):
             self.model.train()
             epoch_start_time = time.time()
             total_loss = 0.0
@@ -85,12 +88,23 @@ class Trainer:
                     
                     total_loss += loss.item()
                     progress_bar.set_postfix({'Train Loss': total_loss / (step + 1)})
+                self.global_step += 1
 
+                # Evaluate and Save Checkpoint
+                if self.global_step % self.config['train_config'].get('eval_steps', 1000) == 0:
+                    valid_loss = self.evaluate()
+                    self.model.train()
+                    self.accelerator.print(f"Step {self.global_step} | Valid Loss: {valid_loss:.4f}")
+                    if self.best_valid_loss > valid_loss:
+                        self.best_valid_loss = valid_loss
+                        self.save_checkpoint(save_path, epoch, self.global_step, self.best_valid_loss)
+                        self.accelerator.print(f"New best model saved with Valid Loss: {self.best_valid_loss:.4f}")
+
+            # End of Epoch Evaluation
             valid_loss = self.evaluate()
             epoch_time = time.time() - epoch_start_time
             self.accelerator.print(f"Epoch {epoch} Done | Time: {epoch_time:.1f}s | Train Loss: {total_loss / len(self.train_dataloader):.4f} | Valid Loss: {valid_loss:.4f}")
-
-            self.save_checkpoint(save_path, epoch, valid_loss)
+            self.save_checkpoint(save_path, epoch, self.global_step, valid_loss)
 
     @torch.no_grad()
     def evaluate(self):
@@ -107,7 +121,7 @@ class Trainer:
         
         return total_loss / len(self.valid_dataloader)
 
-    def save_checkpoint(self, save_path, epoch, valid_loss):
+    def save_checkpoint(self, save_path, epoch, steps, valid_loss):
         self.accelerator.wait_for_everyone()
         unwrapped_model = self.accelerator.unwrap_model(self.model)
         
@@ -115,21 +129,25 @@ class Trainer:
             'model_state_dict': unwrapped_model.state_dict(),
             'optimizer_state_dict': self.optimizer.state_dict(),
             'epoch': epoch,
+            'steps': steps,
             'valid_loss': valid_loss
         }
         
-        file_name = f"epoch_{epoch}_val_{valid_loss:.4f}.pt"
+        file_name = f"epoch_{epoch}_steps_{steps}_val_{valid_loss:.4f}.pt"
         path = os.path.join(save_path, file_name)
         
         self.accelerator.save(checkpoint, path)
         self.accelerator.print(f"💾 Checkpoint saved: {path}")
-
 
     def load_checkpoint(self, path):
         try:
             checkpoint = torch.load(path, map_location=self.accelerator.device)
             self.model.load_state_dict(checkpoint['model_state_dict'])
             self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            self.accelerator.print(f"✅ Checkpoint loaded: {path} (Epoch {checkpoint['epoch']}, Valid Loss {checkpoint['valid_loss']:.4f})")
+            self.start_epoch = checkpoint['epoch']
+            self.global_step = checkpoint['steps']
+            self.best_valid_loss = checkpoint['valid_loss']
+            self.accelerator.print(f"✅ Loaded checkpoint from {path} (Epoch {self.start_epoch}, Step {self.global_step})")
+            self.accelerator.print(f"    Best Validation Loss: {self.best_valid_loss:.4f}")
         except Exception as e:
             self.accelerator.print(f"❌ Failed to load checkpoint from {path}: {e}")

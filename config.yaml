@@ -36,6 +36,6 @@ dataset_config:
 train_config:
   batch_size: 16       # roberta-large는 크니까 배치를 좀 줄임 (메모리 안전)
   num_workers: 4      # 데이터 로더 워커 수
-  learning_rate: 1e-5 # 0.00002 (Pre-trained 모델 국룰 학습률)
+  learning_rate: 0.00001 # 0.00001 (Pre-trained 모델 국룰 학습률)
   num_epochs: 3       # 3 Epoch 정도면 충분히 적응함
   gradient_accumulation_steps: 4 # 배치 8 * 2 = 실제 배치 16 효과

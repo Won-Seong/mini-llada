@@ -37,7 +37,7 @@ def main():
     
     # Load configuration
     config = {}
-    with open("config.yaml", "r") as f:
+    with open(args.config_file, "r") as f:
         config = yaml.safe_load(f)
 
     trainer = Trainer(config)

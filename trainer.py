@@ -6,7 +6,7 @@ import time
 from tqdm import tqdm
 import os
 
-from mini_llada.data.models.network import get_pretrained_bert_model, BERT_Wrapper
+from mini_llada.models.network import get_pretrained_bert_model, BERT_Wrapper
 from mini_llada.data.dataset import get_tokenizer, prepare_data
 from mini_llada.models.diffusion import DiffusionModel
 

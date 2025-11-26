@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
-from rope import precompute_freqs_cis, apply_rotary_emb
+from mini_llada.models.rope import precompute_freqs_cis, apply_rotary_emb
 from transformers import AutoModelForMaskedLM
 
 # ----------------------------------------

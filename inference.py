@@ -1,10 +1,10 @@
 import torch
 import os
 
-from network import get_pretrained_bert_model, BERT_Wrapper
-from dataset import get_tokenizer
-from diffusion import DiffusionModel
-from sampler import Sampler
+from mini_llada.data.models.network import get_pretrained_bert_model, BERT_Wrapper
+from mini_llada.data.dataset import get_tokenizer
+from mini_llada.models.diffusion import DiffusionModel
+from mini_llada.utils.sampler import Sampler
 
 class Inferencer:
     def __init__(self, config:dict, checkpoint_path=None, device=None):

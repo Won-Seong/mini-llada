@@ -6,9 +6,9 @@ import time
 from tqdm import tqdm
 import os
 
-from network import get_pretrained_bert_model, BERT_Wrapper
-from dataset import get_tokenizer, prepare_data
-from diffusion import DiffusionModel
+from mini_llada.data.models.network import get_pretrained_bert_model, BERT_Wrapper
+from mini_llada.data.dataset import get_tokenizer, prepare_data
+from mini_llada.models.diffusion import DiffusionModel
 
 class Trainer:
     def __init__(self, config:dict):

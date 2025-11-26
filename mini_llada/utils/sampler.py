@@ -1,5 +1,5 @@
 import torch
-from diffusion import DiffusionModel
+from mini_llada.models.diffusion import DiffusionModel
 
 class Sampler():
     def __init__(self, model: DiffusionModel, tokenizer):

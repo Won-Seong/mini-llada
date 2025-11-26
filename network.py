@@ -3,11 +3,16 @@ import torch.nn.functional as F
 from rope import precompute_freqs_cis, apply_rotary_emb
 from transformers import AutoModelForMaskedLM
 
-def get_pretrained_bert_model(model_name="klue/roberta-large"):
+# ----------------------------------------
+# Pretrained BERT Model Wrapper
+# ----------------------------------------
+
+def get_pretrained_bert_model(model_name:str):
     model = AutoModelForMaskedLM.from_pretrained(model_name)
     return model
 
 class BERT_Wrapper(nn.Module):
+    # Wraps a pretrained BERT model for use in the diffusion model
     def __init__(self, bert_model):
         super().__init__()
         self.bert_model = bert_model
@@ -15,6 +20,10 @@ class BERT_Wrapper(nn.Module):
     def forward(self, x, attention_mask=None):
         outputs = self.bert_model(input_ids=x, attention_mask=attention_mask)
         return outputs.logits
+
+# ----------------------------------------
+# Custom Transformer Model
+# ----------------------------------------
 
 class Attention(nn.Module):
     def __init__(self, dim, heads):

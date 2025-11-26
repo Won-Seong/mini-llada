@@ -1,8 +1,38 @@
-dim: 768
-depth: 12
-heads: 16
-intermediate_size: 1024
-max_seq_len: 384
-batch_size: 16
-learning_rate: 0.00002
-epochs: 10
+# ==========================================
+# 모델 설정 (Pre-trained Model)
+# ==========================================
+pretrained_model_name: klue/roberta-large
+max_seq_len: 512
+
+# ==========================================
+# 데이터셋 설정 (Multi-Dataset Config)
+# ==========================================
+# name: HuggingFace 데이터셋 경로
+# split: 사용할 데이터 구간 (예: train, train[:1000] 등)
+# q_col: 질문(Question)에 해당하는 컬럼 이름
+# a_col: 답변(Answer)에 해당하는 컬럼 이름
+dataset_config:
+  - name: maywell/ko_wikidata_QA
+    split: train
+    q_col: instruction
+    a_col: output
+
+  - name: maywell/ko-gpt3_14k
+    split: train
+    q_col: question  # 이 데이터셋은 컬럼명이 다름!
+    a_col: answer
+
+  - name: beomi/KoAlpaca-v1.1a
+    split: train
+    q_col: instruction
+    a_col: output
+
+# ==========================================
+# 학습 하이퍼파라미터 (Trainer Config)
+# ==========================================
+train_config:
+  batch_size: 16       # roberta-large는 크니까 배치를 좀 줄임 (메모리 안전)
+  num_workers: 4      # 데이터 로더 워커 수
+  learning_rate: 1e-5 # 0.00002 (Pre-trained 모델 국룰 학습률)
+  num_epochs: 3       # 3 Epoch 정도면 충분히 적응함
+  gradient_accumulation_steps: 4 # 배치 8 * 2 = 실제 배치 16 효과

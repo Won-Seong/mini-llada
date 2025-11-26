@@ -3,14 +3,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class DiffusionModel(nn.Module):
-    def __init__(self, network: nn.Module):
+    def __init__(self, network: nn.Module, mask_id: int):
         super().__init__()
         self.network = network
+        self.mask_id = mask_id
 
     def forward(self, x, attention_mask=None):
         return self.reverse_process(x, attention_mask)
 
-    def forward_process(self, x, mask_id):
+    def forward_process(self, x):
         # x is the list of the tokens, shape: [B, L]
         # mask_id is the id of the mask token
         B, L = x.shape
@@ -22,7 +23,7 @@ class DiffusionModel(nn.Module):
         random_matrix = torch.rand(B, L, device=device) # Shape: [B, L]
         mask_indices = (random_matrix < mask_probs) # Shape: [B, L]
 
-        noisy_x = torch.where(mask_indices, mask_id, x)
+        noisy_x = torch.where(mask_indices, self.mask_id, x)
         return t, noisy_x, mask_indices
 
     def reverse_process(self, noisy_x, attention_mask=None):
@@ -38,15 +39,7 @@ class DiffusionModel(nn.Module):
         
         target_flat = torch.where(mask_indices.view(-1), target_flat, -100)
         if attention_mask is not None:
-            # mask가 1이면(진짜 데이터) 유지, 0이면(패딩) -100
+            # Apply attention mask to ignore padding tokens in loss calculation
             target_flat = torch.where(attention_mask.view(-1).bool(), target_flat, -100)
         
         return F.cross_entropy(logits_flat, target_flat)
-
-        #token_losses = F.cross_entropy(logits_flat, target_flat, reduction='none')
-        #t_expanded = t.view(B, 1).expand(B, L).reshape(-1)
-        #t_safe = torch.clamp(t_expanded, min=1e-4)
-        
-        #weighted_losses = token_losses * (1.0 / t_safe)
-        
-        #return weighted_losses.sum() / (token_losses > 0).sum().clamp(min=1)

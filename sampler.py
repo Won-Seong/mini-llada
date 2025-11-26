@@ -9,8 +9,11 @@ class Sampler():
         self.device = next(model.parameters()).device
 
     @torch.no_grad()
-    def generate(self, prompt_text, steps: int = 32, gen_len: int = 32, temperature=1.0,
+    def generate(self, prompt_text, steps: int = 32, gen_len: int = 32, temperature=0.8,
                  print_progress: bool = False):
+        """
+        Generates text using the diffusion model given a prompt.
+        """
         self.model.eval()
 
         prompts_ids = self.tokenizer.encode(prompt_text, return_tensors='pt').to(self.device) # Shape: [1, prompt_len]

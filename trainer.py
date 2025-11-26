@@ -3,137 +3,130 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from accelerate import Accelerator
 import time
-import yaml
 from tqdm import tqdm
-import argparse
 import os
-
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 from network import get_pretrained_bert_model, BERT_Wrapper
 from dataset import get_tokenizer, prepare_data
 from diffusion import DiffusionModel
-from helper import init_weights
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="Mini LLaDA Trainer")
-    
-    parser.add_argument(
-        "--output_dir", 
-        type=str, 
-        default="./checkpoints", 
-        help="Directory to save model checkpoints"
-    )
-
-    parser.add_argument(
-        "--save_every", 
-        type=int, 
-        default=1, 
-        help="How many epochs between saving model checkpoints"
-    )
-
-    parser.add_argument(
-        "--resume_path", 
-        type=str, 
-        default=None, 
-        help="Path to the checkpoint file to resume from (e.g., ./checkpoints/mini_llada.pth)"
-    )
-    
-    return parser.parse_args()
-
-
-
-# ==========================================
-# Training Loop
-# ==========================================
-def main():
-    args = parse_args()
-    os.makedirs(args.output_dir, exist_ok=True)
-
-    with open("config.yaml", "r") as f:
-        CONFIG = yaml.safe_load(f)
-    
-    accelerator = Accelerator(mixed_precision="bf16")
-    accelerator.print(f"🚀 Training Start! Device: {accelerator.device}")
-
-    tokenizer = get_tokenizer("klue/roberta-large")
-    dataset = prepare_data(tokenizer, max_seq_len=CONFIG['max_seq_len'])
-    
-    dataloader = DataLoader(
-        dataset, 
-        batch_size=CONFIG['batch_size'], 
-        shuffle=True, 
-        num_workers=4, 
-        pin_memory=True,
-        persistent_workers=True
-    )
-
-    # network = Transformer(
-    #     vocab_size=len(tokenizer),
-    #     dim=CONFIG["dim"], 
-    #     depth=CONFIG["depth"], 
-    #     heads=CONFIG["heads"],
-    #     intermediate_size=CONFIG["intermediate_size"],
-    #     max_seq_len=CONFIG["max_seq_len"]
-    # )
-
-    network = get_pretrained_bert_model()
-    wrapper = BERT_Wrapper(network)
-    model = DiffusionModel(wrapper)
-    
-    #init_weights(model)
-
-    if args.resume_path:
-        if os.path.exists(args.resume_path):
-            accelerator.print(f"🔄 Resuming from checkpoint: {args.resume_path}")
-            state_dict = torch.load(args.resume_path, map_location='cpu')
-            model.load_state_dict(state_dict)
-        else:
-            raise FileNotFoundError(f"❌ Resume path provided but file not found: {args.resume_path}")
-    else:
-        accelerator.print("✨ No resume path provided. Starting from scratch.")
-
-    optimizer = optim.AdamW(model.parameters(), lr=CONFIG['learning_rate'])
-
-    model, optimizer, dataloader = accelerator.prepare(model, optimizer, dataloader)
-    
-    mask_id = tokenizer.mask_token_id
-
-    model.train()
-    
-    for epoch in tqdm(range(CONFIG['epochs'])):
-        total_loss = 0
-        start_time = time.time()
+class Trainer:
+    def __init__(self, config:dict):
+        self.config = config
         
-        for step, batch in enumerate(dataloader):
+        self.accelerator = Accelerator(
+            mixed_precision="bf16",
+            gradient_accumulation_steps=self.config['train_config'].get('gradient_accumulation_steps', 1))
+        self.accelerator.print(f"Training Start! Device: {self.accelerator.device}")
+
+        self.tokenizer = get_tokenizer(self.config['pretrained_model_name'])
+        dataset = prepare_data(self.tokenizer, dataset_config=self.config['dataset_config']['dataset_list'], max_seq_len=self.config['max_seq_len'])
+
+        # Split Dataset into Train and Validation
+        split_datasets = dataset.train_test_split(test_size=self.config['dataset_config'].get('test_size', 0.1), 
+                                                  seed=self.config.get('random_seed', 42))
+        train_dataset = split_datasets['train']
+        val_dataset = split_datasets['test']
+        self.accelerator.print(f"Train dataset size: {len(train_dataset)}")
+        self.accelerator.print(f"Validation dataset size: {len(val_dataset)}")
+
+        self.train_dataloader = DataLoader(
+            train_dataset,
+            batch_size=self.config['train_config']['batch_size'],
+            shuffle=True,
+            num_workers=self.config['train_config'].get('num_workers', 4),
+            pin_memory=True)
+
+        self.valid_dataloader = DataLoader(
+            val_dataset,
+            batch_size=self.config['train_config']['batch_size'],
+            shuffle=False,
+            num_workers=self.config['train_config'].get('num_workers', 4),
+            pin_memory=True)
+
+        self.network = BERT_Wrapper(get_pretrained_bert_model(self.config['pretrained_model_name']))
+        self.model = DiffusionModel(self.network, self.tokenizer.mask_token_id)
+        
+        self.optimizer = optim.AdamW(
+            self.model.parameters(),
+            lr=self.config['train_config']['learning_rate']
+        )
+
+        (self.model, 
+         self.optimizer, 
+         self.train_dataloader,
+         self.valid_dataloader) = self.accelerator.prepare(
+            self.model, 
+            self.optimizer, 
+            self.train_dataloader,
+            self.valid_dataloader
+        )
+
+    def train(self, save_path:str):
+        os.makedirs(save_path, exist_ok=True)
+
+        for epoch in range(1, self.config['train_config']['num_epochs'] + 1):
+            self.model.train()
+            epoch_start_time = time.time()
+            total_loss = 0.0
+            
+            progress_bar = tqdm(self.train_dataloader, desc=f"Epoch {epoch}/{self.config['num_epochs']}")
+            for step, batch in enumerate(progress_bar):
+                with self.accelerator.accumulate(self.model):
+                    x = batch['input_ids']
+                    attention_mask = batch['attention_mask']
+
+                    t, noisy_x, mask_indices = self.model.forward_process(x)
+                    loss = self.model.loss(x, t, noisy_x, mask_indices, attention_mask)
+                    
+                    self.accelerator.backward(loss)
+                    self.optimizer.step()
+                    self.optimizer.zero_grad()
+                    
+                    total_loss += loss.item()
+                    progress_bar.set_postfix({'Train Loss': total_loss / (step + 1)})
+
+            valid_loss = self.evaluate()
+            epoch_time = time.time() - epoch_start_time
+            self.accelerator.print(f"Epoch {epoch} Done | Time: {epoch_time:.1f}s | Train Loss: {total_loss / len(self.train_dataloader):.4f} | Valid Loss: {valid_loss:.4f}")
+
+            self.save_checkpoint(save_path, epoch, valid_loss)
+
+    @torch.no_grad()
+    def evaluate(self):
+        self.model.eval()
+        total_loss = 0.0
+        
+        for batch in self.valid_dataloader:
             x = batch['input_ids']
-            attention_mask = batch.get('attention_mask', None)
-            optimizer.zero_grad()
-            
-            t, noisy_x, mask_indices = model.forward_process(x, mask_id)
-            loss = model.loss(x, t, noisy_x, mask_indices, attention_mask)
-            
-            accelerator.backward(loss)
-            optimizer.step()
-            
-            total_loss += loss.item()
-            
-            if step % 50 == 0:
-                avg_step_loss = total_loss / (step + 1)
-                accelerator.print(f"\rEpoch {epoch+1} | Step {step}/{len(dataloader)} | Loss: {avg_step_loss:.4f}", end="")
-        
-        epoch_loss = total_loss / len(dataloader)
-        accelerator.print(f"\n✅ Epoch {epoch+1} Complete! Avg Loss: {epoch_loss:.4f} (소요시간: {time.time()-start_time:.1f}초)")
-        
-        if (epoch + 1) % args.save_every == 0 or (epoch + 1) == CONFIG['epochs']:
-            accelerator.wait_for_everyone()
-            unwrapped_model = accelerator.unwrap_model(model)
-            
-            save_name = "mini_llada.pth"
-            save_path = os.path.join(args.output_dir, save_name)
-            
-            torch.save(unwrapped_model.state_dict(), save_path)
-            accelerator.print(f"💾 Model Saved.: {save_path}")
+            attention_mask = batch['attention_mask']
 
-if __name__ == "__main__":
-    main()
+            t, noisy_x, mask_indices = self.model.forward_process(x)
+            loss = self.model.loss(x, t, noisy_x, mask_indices, attention_mask)
+            total_loss += loss.item()
+        
+        return total_loss / len(self.valid_dataloader)
+
+    def save_checkpoint(self, save_path, epoch, valid_loss):
+        self.accelerator.wait_for_everyone()
+        unwrapped_model = self.accelerator.unwrap_model(self.model)
+        
+        checkpoint = {
+            'model_state_dict': unwrapped_model.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+            'epoch': epoch,
+            'valid_loss': valid_loss
+        }
+        
+        file_name = f"epoch_{epoch}_val_{valid_loss:.4f}.pt"
+        path = os.path.join(save_path, file_name)
+        
+        self.accelerator.save(checkpoint, path)
+        self.accelerator.print(f"💾 Checkpoint saved: {path}")
+
+
+    def _load_checkpoint(self, path):
+        self.accelerator.print(f"Resuming from checkpoint: {path}")
+        checkpoint = torch.load(path, map_location=self.accelerator.device)
+        self.model.load_state_dict(checkpoint['model_state_dict'])
+        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])

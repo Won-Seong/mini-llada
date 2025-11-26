@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import Dataset
 from transformers import AutoTokenizer
-from datasets import load_dataset, concat_datasets
+from datasets import load_dataset, concatenate_datasets
 
 class PreTokenizedDataset(Dataset):
     def __init__(self, input_ids_list):
@@ -50,7 +50,7 @@ def prepare_data(tokenizer, dataset_config: list[dict], max_seq_len: int = 512):
         raise ValueError("No datasets were successfully loaded.")
     
     # 3. Combine all datasets
-    combined_dataset = concat_datasets(processed_datasets)
+    combined_dataset = concatenate_datasets(processed_datasets)
 
     # 4. Tokenization
     print("Tokenizing dataset...")

@@ -34,7 +34,7 @@ dataset_config:
 # 학습 하이퍼파라미터 (Trainer Config)
 # ==========================================
 train_config:
-  eval_steps: 5000    # 5000 스텝마다 평가, 저장
+  eval_steps: 2000    # 2000 스텝마다 평가, 저장
   batch_size: 16       # roberta-large는 크니까 배치를 좀 줄임 (메모리 안전)
   num_workers: 4      # 데이터 로더 워커 수
   learning_rate: 0.00001 # 0.00001 (Pre-trained 모델 국룰 학습률)

@@ -41,12 +41,15 @@ class Inferencer:
         else:
             raise FileNotFoundError(f"No checkpoint found at {checkpoint_path}")
 
-    def generate_text(self, prompt: str, steps: int = 32, gen_len: int = 32, temperature: float = 0.8, print_progress: bool = False) -> str:
+    def generate_text(self, prompt: str, steps: int = 32, gen_len: int = 32, 
+                      temperature: float = 0.8, repetition_penalty: float = 1.0, 
+                      print_progress: bool = False) -> str:
         generated_text = self.sampler.generate(
             prompt_text=prompt,
             steps=steps,
             gen_len=gen_len,
             temperature=temperature,
+            repetition_penalty=repetition_penalty,
             print_progress=print_progress
         )
         return generated_text

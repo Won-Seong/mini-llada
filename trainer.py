@@ -106,7 +106,7 @@ class Trainer:
             self.accelerator.print(f"Epoch {epoch} Done | Time: {epoch_time:.1f}s | Train Loss: {total_loss / len(self.train_dataloader):.4f} | Valid Loss: {valid_loss:.4f}")
             if self.best_valid_loss > valid_loss:
                 self.best_valid_loss = valid_loss
-                self.save_checkpoint(save_path, epoch, self.global_step, self.best_valid_loss)
+                self.save_checkpoint(save_path, epoch + 1, self.global_step, self.best_valid_loss)
                 self.accelerator.print(f"New best model saved with Valid Loss: {self.best_valid_loss:.4f}")
 
     @torch.no_grad()

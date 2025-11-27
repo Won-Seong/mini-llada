@@ -9,7 +9,8 @@ class Sampler():
         self.device = next(model.parameters()).device
 
     @torch.no_grad()
-    def generate(self, prompt_text, steps: int = 32, gen_len: int = 32, temperature=0.8,
+    def generate(self, prompt_text, steps: int = 32, gen_len: int = 32, 
+                 temperature=0.8, repetition_penalty: float = 1.0,
                  print_progress: bool = False):
         """
         Generates text using the diffusion model given a prompt.
@@ -33,6 +34,24 @@ class Sampler():
             # Unmasking
             logits = self.model(x)
             gen_logits = logits[:, prompt_len:, :] # Shape: [1, gen_len, vocab_size]
+            
+            # Repetition Penalty
+
+            if repetition_penalty > 1.0:
+                for i in range(gen_logits.size(0)): # Batch loop
+                    existing_tokens = x[i, prompt_len:].unique()
+                    existing_tokens = existing_tokens[existing_tokens != self.mask_id] # Don't penalty to mask
+                    current_logits = gen_logits[i]
+
+                    for token_id in existing_tokens:
+                        current_logits[:, token_id] = torch.where(
+                            current_logits[:, token_id] > 0,
+                            current_logits[:, token_id] / repetition_penalty,
+                            current_logits[:, token_id] * repetition_penalty
+                        )
+
+            # Temperature
+
             if temperature > 0:
                 probs = torch.softmax(gen_logits / temperature, dim=-1)
                 pred_ids = torch.multinomial(probs.view(-1, probs.size(-1)), num_samples=1).view(1, gen_len) 

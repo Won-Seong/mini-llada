@@ -35,8 +35,8 @@ dataset_config:
 # ==========================================
 train_config:
   eval_steps: 2000    # 2000 스텝마다 평가, 저장
-  batch_size: 2       # roberta-large는 크니까 배치를 좀 줄임 (메모리 안전)
+  batch_size: 16       # roberta-large는 크니까 배치를 좀 줄임 (메모리 안전)
   num_workers: 4      # 데이터 로더 워커 수
   learning_rate: 0.0001 # 0.00001 (Pre-trained 모델 국룰 학습률)
   num_epochs: 3       # 3 Epoch 정도면 충분히 적응함
-  gradient_accumulation_steps: 8 # 배치 8 * 2 = 실제 배치 16 효과
+  gradient_accumulation_steps: 2 # 배치 8 * 2 = 실제 배치 16 효과

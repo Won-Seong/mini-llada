@@ -6,7 +6,7 @@ import time
 from tqdm import tqdm
 import os
 
-from mini_llada.models.network import get_pretrained_bert_model, BERT_Wrapper
+from mini_llada.models.network import get_pretrained_model, Wrapper
 from mini_llada.data.dataset import get_tokenizer, prepare_data
 from mini_llada.models.diffusion import DiffusionModel
 
@@ -47,7 +47,7 @@ class Trainer:
             num_workers=self.config['train_config'].get('num_workers', 4),
             pin_memory=True)
 
-        self.network = BERT_Wrapper(get_pretrained_bert_model(self.config['pretrained_model_name']))
+        self.network = Wrapper(get_pretrained_model(self.config['pretrained_model_name']))
         self.model = DiffusionModel(self.network, self.tokenizer.mask_token_id)
         
         self.optimizer = optim.AdamW(

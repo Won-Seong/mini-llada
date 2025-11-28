@@ -23,6 +23,9 @@ class Trainer:
         self.accelerator.print(f"Training Start! Device: {self.accelerator.device}")
 
         self.tokenizer = get_tokenizer(self.config['pretrained_model_name'])
+        if self.tokenizer.mask_token_id is None:
+            self.tokenizer.add_special_tokens({'mask_token': '[MASK]'})
+            self.tokenizer.mask_token_id = self.tokenizer.convert_tokens_to_ids('[MASK]')
         dataset = prepare_data(self.tokenizer, dataset_config=self.config['dataset_config']['dataset_list'], max_seq_len=self.config['max_seq_len'])
 
         # Split Dataset into Train and Validation

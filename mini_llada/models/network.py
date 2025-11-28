@@ -11,7 +11,7 @@ class Wrapper(torch.nn.Module):
         outputs = self.model(input_ids=x, attention_mask=attention_mask, output_hidden_states=False)
         return outputs.logits
 
-def get_network(pretrained_model_name:str):
+def get_pretrained_model(pretrained_model_name:str):
     print(f"⏳ Loading {pretrained_model_name} with 4-bit Quantization...")
     
     # 1. 4비트 양자화 설정 (메모리 절약)

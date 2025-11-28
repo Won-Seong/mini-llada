@@ -1,7 +1,7 @@
 import torch
 import os
 
-from mini_llada.models.network import get_pretrained_bert_model, BERT_Wrapper
+from mini_llada.models.network import get_pretrained_model, Wrapper
 from mini_llada.data.dataset import get_tokenizer
 from mini_llada.models.diffusion import DiffusionModel
 from mini_llada.utils.sampler import Sampler
@@ -19,7 +19,7 @@ class Inferencer:
 
         self.tokenizer = get_tokenizer(self.config['pretrained_model_name'])
 
-        self.network = BERT_Wrapper(get_pretrained_bert_model(self.config['pretrained_model_name']))
+        self.network = Wrapper(get_pretrained_model(self.config['pretrained_model_name']))
         self.model = DiffusionModel(self.network, self.tokenizer.mask_token_id)
 
         self.model.to(self.device)

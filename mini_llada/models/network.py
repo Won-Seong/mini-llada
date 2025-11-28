@@ -1,97 +1,45 @@
-import torch.nn as nn
-import torch.nn.functional as F
-from mini_llada.models.rope import precompute_freqs_cis, apply_rotary_emb
-from transformers import AutoModelForMaskedLM
+import torch
+from transformers import AutoModelForCausalLM, BitsAndBytesConfig
+from peft import LoraConfig, get_peft_model, TaskType
 
-# ----------------------------------------
-# Pretrained BERT Model Wrapper
-# ----------------------------------------
-
-def get_pretrained_bert_model(model_name:str):
-    model = AutoModelForMaskedLM.from_pretrained(model_name)
-    return model
-
-class BERT_Wrapper(nn.Module):
-    # Wraps a pretrained BERT model for use in the diffusion model
-    def __init__(self, bert_model):
+class Wrapper(torch.nn.Module):
+    def __init__(self, model):
         super().__init__()
-        self.bert_model = bert_model
+        self.model = model
 
     def forward(self, x, attention_mask=None):
-        outputs = self.bert_model(input_ids=x, attention_mask=attention_mask)
+        outputs = self.model(input_ids=x, attention_mask=attention_mask, output_hidden_states=False)
         return outputs.logits
 
-# ----------------------------------------
-# Custom Transformer Model
-# ----------------------------------------
-
-class Attention(nn.Module):
-    def __init__(self, dim, heads):
-        super().__init__()
-        self.n_heads = heads
-        self.head_dim = dim // heads
-        self.q_proj = nn.Linear(dim, dim, bias=False)
-        self.k_proj = nn.Linear(dim, dim, bias=False)
-        self.v_proj = nn.Linear(dim, dim, bias=False)
-        self.o_proj = nn.Linear(dim, dim, bias=False)
-
-    def forward(self, x, freqs_cis):
-        B, L, D = x.shape
-        q = self.q_proj(x).view(B, L, self.n_heads, self.head_dim).transpose(1, 2)
-        k = self.k_proj(x).view(B, L, self.n_heads, self.head_dim).transpose(1, 2)
-        v = self.v_proj(x).view(B, L, self.n_heads, self.head_dim).transpose(1, 2)
-
-        freqs_cis = freqs_cis.to(x.device)
-        q, k = apply_rotary_emb(q, k, freqs_cis[:L])
-
-        # LLaDA: is_causal=False (Bidirectional Attention)
-        attn_output = F.scaled_dot_product_attention(q, k, v, is_causal=False)
-        x = attn_output.transpose(1, 2).reshape(B, L, D)
-        x = self.o_proj(x)
-        return x
-
-class Block(nn.Module):
-    def __init__(self, dim, heads, intermediate_size):
-        super().__init__()
-        self.mha = Attention(dim, heads) # Multi-Head Attention
-        self.norm1 = nn.RMSNorm(dim)
-        self.norm2 = nn.RMSNorm(dim)
-
-        # Feed-Forward Network with Gated Linear Unit
-        self.gate_up_proj = nn.Linear(dim, intermediate_size * 2, bias=False)
-        self.down_proj = nn.Linear(intermediate_size, dim, bias=False)
-
-    def forward(self, x, freqs_cis):
-        # Multi-Head Attention
-        residual = x
-        x = self.norm1(x)
-        x = self.mha(x, freqs_cis)
-        x = residual + x
-
-        # Feed-Forward Network
-        residual = x
-        x = self.norm2(x)
-        gate, up = self.gate_up_proj(x).chunk(2, dim=-1)
-        x = F.silu(gate) * up
-        x = self.down_proj(x)
-        x = residual + x
-        return x
-
-class Transformer(nn.Module):
-    def __init__(self, vocab_size, dim, depth, heads, intermediate_size, max_seq_len=2048):
-        super().__init__()
-        self.embed = nn.Embedding(vocab_size, dim) # Token Embedding
-        self.layers = nn.ModuleList([
-            Block(dim, heads, intermediate_size) for _ in range(depth)
-        ])
-        self.norm = nn.RMSNorm(dim)
-        self.head = nn.Linear(dim, vocab_size, bias=False)
-
-        freqs_cis = precompute_freqs_cis(dim // heads, max_seq_len)
-        self.register_buffer("freqs_cis", freqs_cis, persistent=False)
-
-    def forward(self, x):
-        x = self.embed(x)
-        for layer in self.layers:
-            x = layer(x, self.freqs_cis)
-        return self.head(self.norm(x))
+def get_network(pretrained_model_name:str)
+    print(f"⏳ Loading {pretrained_model_name} with 4-bit Quantization...")
+    
+    # 1. 4비트 양자화 설정 (메모리 절약)
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.bfloat16
+    )
+    
+    # 2. 모델 로드 (CausalLM으로 불러오지만 마스크를 조작해서 씀)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        quantization_config=bnb_config,
+        device_map="auto" # 알아서 GPU에 분배
+    )
+    
+    # 3. LoRA 설정 (훈련 가능한 작은 파라미터 붙이기)
+    peft_config = LoraConfig(
+        task_type=TaskType.CAUSAL_LM, 
+        inference_mode=False, 
+        r=8,            # Rank (클수록 파라미터 많아짐)
+        lora_alpha=32, 
+        lora_dropout=0.1
+    )
+    
+    # 4. 모델에 LoRA 장착
+    model = get_peft_model(model, peft_config)
+    model.print_trainable_parameters() # 훈련할 파라미터 수 출력 (약 0.1% ~ 1%)
+    
+    return model

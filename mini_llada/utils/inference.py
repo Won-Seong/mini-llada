@@ -18,6 +18,9 @@ class Inferencer:
         print(f"Inference initialized on {self.device}")
 
         self.tokenizer = get_tokenizer(self.config['pretrained_model_name'])
+        if self.tokenizer.mask_token_id is None:
+            self.tokenizer.add_special_tokens({'mask_token': '[MASK]'})
+            self.tokenizer.mask_token_id = self.tokenizer.convert_tokens_to_ids('[MASK]')
 
         self.network = Wrapper(get_pretrained_model(self.config['pretrained_model_name']))
         self.model = DiffusionModel(self.network, self.tokenizer.mask_token_id)

@@ -33,9 +33,10 @@ def get_pretrained_model(pretrained_model_name:str):
     peft_config = LoraConfig(
         task_type=TaskType.CAUSAL_LM, 
         inference_mode=False, 
-        r=8,            # Rank (클수록 파라미터 많아짐)
+        r=16,            # Rank (클수록 파라미터 많아짐)
         lora_alpha=32, 
-        lora_dropout=0.1
+        lora_dropout=0.05,
+        target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "up_proj", "down_proj"]
     )
     
     # 4. 모델에 LoRA 장착

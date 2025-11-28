@@ -24,7 +24,7 @@ def get_pretrained_model(pretrained_model_name:str):
     
     # 2. 모델 로드 (CausalLM으로 불러오지만 마스크를 조작해서 씀)
     model = AutoModelForCausalLM.from_pretrained(
-        model_id,
+        pretrained_model_name,
         quantization_config=bnb_config,
         device_map="auto" # 알아서 GPU에 분배
     )

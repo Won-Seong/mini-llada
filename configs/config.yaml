@@ -1,7 +1,7 @@
 # ==========================================
 # 모델 설정 (Pre-trained Model)
 # ==========================================
-pretrained_model_name: klue/roberta-large
+pretrained_model_name: Qwen/Qwen3-1.7B
 max_seq_len: 512
 
 # ==========================================

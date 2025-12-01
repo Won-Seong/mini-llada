@@ -12,23 +12,51 @@ max_seq_len: 512
 # q_col: 질문(Question)에 해당하는 컬럼 이름
 # a_col: 답변(Answer)에 해당하는 컬럼 이름
 dataset_config:
-  dataset_list:
-    - name: maywell/ko_wikidata_QA
-      split: train
-      q_col: instruction
-      a_col: output
+  pre_training:
+    dataset_list:
+      - name: maywell/korean_textbooks
+        split: train
+        text_col: text
 
-    - name: maywell/ko-gpt3_14k
-      split: train
-      q_col: question  # 이 데이터셋은 컬럼명이 다름!
-      a_col: answer
+      - name: klue/klue
+        split: train
+        text_col: sentence 
 
-    - name: beomi/KoAlpaca-v1.1a
-      split: train
-      q_col: instruction
-      a_col: output
+      - name: wikimedia/wikipedia
+        subset: 20231101.ko
+        split: train
+        text_col: text
     
-  test_size: 0.1
+    test_size: 0.01
+
+  fine_tuning:
+    dataset_list:
+      - name: maywell/ko_wikidata_QA
+        split: train
+        q_col: instruction
+        a_col: output
+
+      - name: maywell/ko-gpt3_14k
+        split: train
+        q_col: question 
+        a_col: answer
+
+      - name: beomi/KoAlpaca-v1.1a
+        split: train
+        q_col: instruction
+        a_col: output
+      
+      - name: kyujinpy/OpenOrca-KO
+        split: train
+        q_col: instruction
+        a_col: output
+
+      - name: kikikara/ko_QA_dataset
+        split: train
+        q_col: input
+        a_col: output
+      
+    test_size: 0.01
 
 # ==========================================
 # 학습 하이퍼파라미터 (Trainer Config)
@@ -39,4 +67,4 @@ train_config:
   num_workers: 4      # 데이터 로더 워커 수
   learning_rate: 0.00001 # 0.00001 (Pre-trained 모델 국룰 학습률)
   num_epochs: 3       # 3 Epoch 정도면 충분히 적응함
-  gradient_accumulation_steps: 4 # 배치 8 * 2 = 실제 배치 16 효과
+  gradient_accumulation_steps: 4

@@ -17,39 +17,69 @@ def get_tokenizer(model_name: str):
     tokenizer = AutoTokenizer.from_pretrained(model_name)    
     return tokenizer
 
-def prepare_data(tokenizer, dataset_config: list[dict], max_seq_len: int = 512):
-    print(f"Preparing dataset with max_len={max_seq_len}...")
+def prepare_dataset(
+    tokenizer, 
+    dataset_config: list[dict], 
+    max_seq_len: int = 512, 
+    mode: str = "pretrain",
+):
+    """
+    Args:
+        mode (str): 'pretrain' or 'sft'
+    """
+    print(f"Preparing dataset for [{mode}] with max_len={max_seq_len}...")
     processed_datasets = []
 
     for config in dataset_config:
         name = config['name']
+        subset = config.get('subset', None)
         split = config.get('split', 'train')
         limit = config.get('limit', None)
-        q_col = config['q_col']
-        a_col = config['a_col']
-
-        print(f"Loading dataset: {name}...")
+        
+        print(f"Loading dataset: {name} (subset: {subset})...")
 
         try:
-            # 1. load dataset
-            dataset = load_dataset(name, split=split)
+            # 1. Load Dataset
+            if subset:
+                dataset = load_dataset(name, subset, split=split)
+            else:
+                dataset = load_dataset(name, split=split)
+
             if limit:
                 dataset = dataset.select(range(limit))
 
-            # 2. format dataset
-            def format_example(example):
-                return {'text': f"질문: {example[q_col]} 답변: {example[a_col]}"}
+            # 2. Format Text
+            if mode == "sft":
+                # Fine-tuning
+                q_col = config.get('q_col', 'question')
+                a_col = config.get('a_col', 'answer')
+                
+                def format_sft(example):
+                    return {'text': f"질문: {example[q_col]}\n답변: {example[a_col]}"}
+                
+                dataset = dataset.map(format_sft, remove_columns=dataset.column_names)
+                
+            else: # mode == "pretrain"
+                # Pre-training
+                text_col = config.get('text_col', 'text')
+                
+                def format_pretrain(example):
+                    return {'text': example[text_col]}
+                
+                dataset = dataset.map(format_pretrain, remove_columns=dataset.column_names)
 
-            dataset = dataset.map(format_example, remove_columns=dataset.column_names)
+            # remove short or empty texts
+            dataset = dataset.filter(lambda x: x['text'] is not None and len(x['text']) > 5)
             processed_datasets.append(dataset)
+
         except Exception as e:
-            print(f"Error loading dataset {name}: {e}")
+            print(f"⚠️ Error loading dataset {name}: {e}")
             continue
 
     if not processed_datasets:
         raise ValueError("No datasets were successfully loaded.")
     
-    # 3. Combine all datasets
+    # 3. Combine
     combined_dataset = concatenate_datasets(processed_datasets)
 
     # 4. Tokenization
@@ -64,6 +94,6 @@ def prepare_data(tokenizer, dataset_config: list[dict], max_seq_len: int = 512):
         )
 
     tokenized_dataset = combined_dataset.map(tokenize_function, batched=True, remove_columns=["text"])
-    tokenized_dataset.set_format("torch")
-    print("Dataset preparation complete. Number of samples:", len(tokenized_dataset))
+    tokenized_dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
+    print(f"DONE. Total samples: {len(tokenized_dataset)}")
     return tokenized_dataset

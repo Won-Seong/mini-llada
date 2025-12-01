@@ -1,6 +1,7 @@
 import yaml
 import argparse
 import os
+from mini_llada.data.dataset import get_tokenizer, prepare_dataset
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -29,6 +30,21 @@ def parse_args():
         default=None, 
         help="Path to the checkpoint file to resume from (e.g., ./checkpoints/mini_llada.pth)"
     )
+
+    parser.add_argument(
+        "--seed", 
+        type=int, 
+        default=42,
+        help="Random seed for reproducibility"
+    )
+
+    parser.add_argument(
+        "--mode",
+        type=str,
+        choices=["pretrain", "sft"],
+        default="pretrain",
+        help="Training mode: 'pretrain' for pre-training, 'sft' for supervised fine-tuning"
+    )
     
     return parser.parse_args()
 
@@ -40,7 +56,10 @@ def main():
     with open(args.config_file, "r") as f:
         config = yaml.safe_load(f)
 
-    trainer = Trainer(config)
+    tokenizer = get_tokenizer(config['pretrained_model_name'])
+    dataset = prepare_dataset(tokenizer, dataset_config=config['dataset_config']['dataset_list'], max_seq_len=config['max_seq_len'], mode=args.mode)
+
+    trainer = Trainer(config, tokenizer, dataset)
 
     # Resume from checkpoint if provided
     if args.resume_path is not None:

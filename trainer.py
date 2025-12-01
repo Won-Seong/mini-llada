@@ -7,11 +7,10 @@ from tqdm import tqdm
 import os
 
 from mini_llada.models.network import get_pretrained_bert_model, BERT_Wrapper
-from mini_llada.data.dataset import get_tokenizer, prepare_dataset
 from mini_llada.models.diffusion import DiffusionModel
 
 class Trainer:
-    def __init__(self, config:dict):
+    def __init__(self, config:dict, tokenizer, dataset):
         self.config = config
         self.global_step = 0
         self.start_epoch = 1
@@ -21,9 +20,7 @@ class Trainer:
             mixed_precision="bf16",
             gradient_accumulation_steps=self.config['train_config'].get('gradient_accumulation_steps', 1))
         self.accelerator.print(f"Training Start! Device: {self.accelerator.device}")
-
-        self.tokenizer = get_tokenizer(self.config['pretrained_model_name'])
-        dataset = prepare_dataset(self.tokenizer, dataset_config=self.config['dataset_config']['dataset_list'], max_seq_len=self.config['max_seq_len'])
+        self.tokenizer = tokenizer
 
         # Split Dataset into Train and Validation
         split_datasets = dataset.train_test_split(test_size=self.config['dataset_config'].get('test_size', 0.1), 

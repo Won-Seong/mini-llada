@@ -57,7 +57,12 @@ def main():
         config = yaml.safe_load(f)
 
     tokenizer = get_tokenizer(config['pretrained_model_name'])
-    dataset = prepare_dataset(tokenizer, dataset_config=config['dataset_config']['dataset_list'], max_seq_len=config['max_seq_len'], mode=args.mode)
+    if args.mode == 'pretrain':
+        dataset_config = config['dataset_config']['pre_training']['dataset_list']
+    else:  # args.mode == 'sft'
+        dataset_config = config['dataset_config']['fine_tuning']['dataset_list']
+
+    dataset = prepare_dataset(tokenizer, dataset_config=dataset_config, max_seq_len=config['max_seq_len'], mode=args.mode)
 
     trainer = Trainer(config, tokenizer, dataset)
 

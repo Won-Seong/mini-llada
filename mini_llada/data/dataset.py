@@ -85,42 +85,13 @@ def prepare_dataset(
     # 4. Tokenization
     print("Tokenizing dataset...")
     def tokenize_function(examples):
-        if mode == 'pretrain':
-            return tokenizer(
-                examples["text"], 
-                padding="max_length", 
-                truncation=True, 
-                max_length=max_seq_len,
-                return_tensors="pt"
-            )
-        else: # mode == 'sft'
-            # 1. without padding first
-            tokenized = tokenizer(
-                examples["text"], 
-                truncation=True, 
-                max_length=max_seq_len, 
-                padding=False, 
-                return_attention_mask=False
-            )
-            
-            new_input_ids = []
-            new_attention_masks = []
-            
-            for ids in tokenized["input_ids"]:
-                curr_len = len(ids)
-                pad_len = max_seq_len - curr_len # padding length
-                
-                # 2. add eos token for padding
-                final_ids = ids + [tokenizer.eos_token_id] * pad_len
-                final_mask = [1] * max_seq_len # attention mask
-                
-                new_input_ids.append(final_ids)
-                new_attention_masks.append(final_mask)
-            
-            return {
-                "input_ids": new_input_ids, 
-                "attention_mask": new_attention_masks
-            }
+        return tokenizer(
+            examples["text"], 
+            padding="max_length", 
+            truncation=True, 
+            max_length=max_seq_len,
+            return_tensors="pt"
+        )
 
     tokenized_dataset = combined_dataset.map(tokenize_function, batched=True, remove_columns=["text"])
     tokenized_dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])

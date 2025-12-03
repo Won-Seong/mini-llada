@@ -15,6 +15,7 @@ dataset_config:
   pre_training:
     dataset_list:
       - name: maywell/korean_textbooks
+        subset: claude_evol
         split: train
         text_col: text
 
@@ -23,7 +24,7 @@ dataset_config:
         split: train
         text_col: text
     
-    test_size: 0.01
+    test_size: 0.002
 
   fine_tuning:
     dataset_list:
@@ -57,7 +58,7 @@ dataset_config:
         q_col: instruction
         a_col: output
       
-    test_size: 0.01
+    test_size: 0.005
 
 # ==========================================
 # 학습 하이퍼파라미터 (Trainer Config)

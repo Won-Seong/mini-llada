@@ -29,7 +29,7 @@ class Sampler():
 
     @torch.no_grad()
     def generate(self, prompt_text, steps: int = 32, gen_len: int = 128, 
-                 temperature=0.0, cfg_scale=0.0, print_progress: bool = False):
+                 temperature=0.0, print_progress: bool = False):
         
         self.model.eval()
 

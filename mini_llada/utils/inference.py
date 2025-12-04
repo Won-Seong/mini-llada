@@ -49,7 +49,7 @@ class Inferencer:
             steps=steps,
             gen_len=gen_len,
             temperature=temperature,
-            repetition_penalty=repetition_penalty,
+            #repetition_penalty=repetition_penalty,
             print_progress=print_progress
         )
         return generated_text

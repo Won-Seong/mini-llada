@@ -79,7 +79,7 @@ class Sampler():
 
             if print_progress:
                 curr_text = self.tokenizer.decode(x[0], skip_special_tokens=False)
-                print(f"Step {i+1}/{steps} (t={t:.2f} -> s={s:.2f}): ...{curr_text[-30:]}")
+                print(f"Step {i+1}/{steps} (t={t:.2f} -> s={s:.2f}): {curr_text}")
         
         return self.tokenizer.decode(x[0], skip_special_tokens=True)
             

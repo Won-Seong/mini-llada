@@ -57,7 +57,7 @@ class Sampler():
             num_transfer = self.get_num_transfer_tokens(gen_mask_index, steps_left)
             
             # 3. Model Prediction
-            logits = self.model(x).logits
+            logits = self.model(x)  # Shape: [1, seq_len, vocab_size]
 
             # 4. Sampling (Gumbel Noise or Temperature)
             # 공식 코드는 float64 변환 후 Gumbel Noise 사용을 권장

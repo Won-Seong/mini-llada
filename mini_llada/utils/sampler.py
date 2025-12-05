@@ -20,20 +20,20 @@ class Sampler():
         return logits.exp() / gumbel_noise
 
     def get_num_transfer_tokens(self, mask_index, steps):
-        '''
-        https://github.com/ML-GSAI/LLaDA/blob/main/generate.py
-        '''
+        """
+        """
         mask_num = mask_index.sum(dim=1, keepdim=True)
-
         base = mask_num // steps
         remainder = mask_num % steps
-
-        num_transfer_tokens = torch.zeros(mask_num.size(0), steps, device=mask_index.device, dtype=torch.int64) + base
-
-        for i in range(mask_num.size(0)):
-            num_transfer_tokens[i, :remainder[i]] += 1
-
-        return num_transfer_tokens
+        
+        # distribute the base number
+        num_transfer = torch.zeros_like(mask_num) + base
+        
+        # distribute the remainder
+        if remainder > 0:
+            num_transfer += 1
+            
+        return num_transfer
 
     @torch.no_grad()
     def generate(self, prompt_text, steps: int = 32, gen_len: int = 128, 

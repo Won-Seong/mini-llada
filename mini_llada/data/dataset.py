@@ -22,6 +22,7 @@ def prepare_dataset(
     dataset_config: list[dict], 
     max_seq_len: int = 512, 
     mode: str = "pretrain",
+    pad_with_eos: bool = False
 ):
     """
     Args:
@@ -83,15 +84,53 @@ def prepare_dataset(
     combined_dataset = concatenate_datasets(processed_datasets)
 
     # 4. Tokenization
-    print("Tokenizing dataset...")
+    print(f"Tokenizing dataset (Strategy: {'EOS Padding' if pad_with_eos else 'Standard Padding'})...")
+    
     def tokenize_function(examples):
-        return tokenizer(
-            examples["text"], 
-            padding="max_length", 
-            truncation=True, 
-            max_length=max_seq_len,
-            return_tensors="pt"
-        )
+        # [Strategy A] EOS Padding
+        if pad_with_eos:
+            tokenized = tokenizer(
+                examples["text"], 
+                truncation=True, 
+                max_length=max_seq_len, 
+                padding=False,
+                return_attention_mask=False
+            )
+            
+            new_input_ids = []
+            new_attention_masks = []
+            
+            for ids in tokenized["input_ids"]:
+                curr_len = len(ids)
+                pad_len = max_seq_len - curr_len
+                
+                # Pad with EOS token
+                final_ids = ids + [tokenizer.eos_token_id] * pad_len
+                final_mask = [1] * max_seq_len 
+                
+                new_input_ids.append(final_ids)
+                new_attention_masks.append(final_mask)
+            
+            return {
+                "input_ids": new_input_ids, 
+                "attention_mask": new_attention_masks
+            }
+
+        # [Strategy B] Standard Padding
+        else:
+            return tokenizer(
+                examples["text"], 
+                padding="max_length",
+                truncation=True, 
+                max_length=max_seq_len, 
+                return_tensors="pt"
+            )
+
+    tokenized_dataset = combined_dataset.map(
+        tokenize_function, 
+        batched=True, 
+        remove_columns=["text"]
+    )
 
     tokenized_dataset = combined_dataset.map(tokenize_function, batched=True, remove_columns=["text"])
     tokenized_dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])

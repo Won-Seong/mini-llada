@@ -45,6 +45,13 @@ def parse_args():
         default="pretrain",
         help="Training mode: 'pretrain' for pre-training, 'sft' for supervised fine-tuning"
     )
+
+    parser.add_argument(
+        "--pad_with_eos",
+        action="store_true",
+        help="Whether to pad sequences with EOS token instead of standard padding",
+        default=False
+    )
     
     return parser.parse_args()
 
@@ -62,7 +69,8 @@ def main():
     else:  # args.mode == 'sft'
         dataset_config = config['dataset_config']['fine_tuning']['dataset_list']
 
-    dataset = prepare_dataset(tokenizer, dataset_config=dataset_config, max_seq_len=config['max_seq_len'], mode=args.mode)
+    dataset = prepare_dataset(tokenizer, dataset_config=dataset_config, max_seq_len=config['max_seq_len'], mode=args.mode,
+                              pad_with_eos=args.pad_with_eos)
 
     trainer = Trainer(config, tokenizer, dataset)
 

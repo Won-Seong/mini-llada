@@ -1,33 +1,12 @@
 import torch
-from torch.utils.data import Dataset
-from transformers import AutoTokenizer
 from datasets import load_dataset, concatenate_datasets
-
-class PreTokenizedDataset(Dataset):
-    def __init__(self, input_ids_list):
-        self.input_ids = torch.tensor(input_ids_list, dtype=torch.long)
-
-    def __len__(self):
-        return len(self.input_ids)
-
-    def __getitem__(self, idx):
-        return self.input_ids[idx]
-
-def get_tokenizer(model_name: str):
-    tokenizer = AutoTokenizer.from_pretrained(model_name)    
-    return tokenizer
 
 def prepare_dataset(
     tokenizer, 
     dataset_config: list[dict], 
     max_seq_len: int = 512, 
     mode: str = "pretrain",
-    pad_with_eos: bool = False
 ):
-    """
-    Args:
-        mode (str): 'pretrain' or 'sft'
-    """
     print(f"Preparing dataset for [{mode}] with max_len={max_seq_len}...")
     processed_datasets = []
 
@@ -49,19 +28,31 @@ def prepare_dataset(
             if limit:
                 dataset = dataset.select(range(limit))
 
-            # 2. Format Text
+            # 2. Format Text (핵심 변경 구간)
             if mode == "sft":
-                # Fine-tuning
+                # [SFT] Chat Template 적용
                 q_col = config.get('q_col', 'question')
                 a_col = config.get('a_col', 'answer')
                 
                 def format_sft(example):
-                    return {'text': f"질문: {example[q_col]}\n답변: {example[a_col]}"}
+                    # 1. 데이터를 Chat Message 포맷(List[Dict])으로 변환
+                    messages = [
+                        {"role": "user", "content": example[q_col]},
+                        {"role": "assistant", "content": example[a_col]}
+                    ]
+                    # 2. 토크나이저의 템플릿 적용 (문자열로 반환됨)
+                    # tokenize=False로 해야 텍스트 상태로 합쳐집니다.
+                    formatted_text = tokenizer.apply_chat_template(
+                        messages, 
+                        tokenize=False, 
+                        add_generation_prompt=False
+                    )
+                    return {'text': formatted_text}
                 
                 dataset = dataset.map(format_sft, remove_columns=dataset.column_names)
                 
             else: # mode == "pretrain"
-                # Pre-training
+                # [Pre-train] 기존 방식 유지 (Raw Text)
                 text_col = config.get('text_col', 'text')
                 
                 def format_pretrain(example):
@@ -69,7 +60,7 @@ def prepare_dataset(
                 
                 dataset = dataset.map(format_pretrain, remove_columns=dataset.column_names)
 
-            # remove short or empty texts
+            # 공통: 너무 짧은 데이터 제거
             dataset = dataset.filter(lambda x: x['text'] is not None and len(x['text']) > 5)
             processed_datasets.append(dataset)
 
@@ -83,56 +74,24 @@ def prepare_dataset(
     # 3. Combine
     combined_dataset = concatenate_datasets(processed_datasets)
 
-    # 4. Tokenization
-    print(f"Tokenizing dataset (Strategy: {'EOS Padding' if pad_with_eos else 'Standard Padding'})...")
-    
+    # 4. Tokenization (Standard Padding)
+    print("Tokenizing dataset...")
     def tokenize_function(examples):
-        # [Strategy A] EOS Padding
-        if pad_with_eos:
-            tokenized = tokenizer(
-                examples["text"], 
-                truncation=True, 
-                max_length=max_seq_len, 
-                padding=False,
-                return_attention_mask=False
-            )
-            
-            new_input_ids = []
-            new_attention_masks = []
-            
-            for ids in tokenized["input_ids"]:
-                curr_len = len(ids)
-                pad_len = max_seq_len - curr_len
-                
-                # Pad with EOS token
-                final_ids = ids + [tokenizer.eos_token_id] * pad_len
-                final_mask = [1] * max_seq_len 
-                
-                new_input_ids.append(final_ids)
-                new_attention_masks.append(final_mask)
-            
-            return {
-                "input_ids": new_input_ids, 
-                "attention_mask": new_attention_masks
-            }
+        return tokenizer(
+            examples["text"], 
+            padding="max_length",
+            truncation=True, 
+            max_length=max_seq_len, 
+            return_tensors="pt"
+        )
 
-        # [Strategy B] Standard Padding
-        else:
-            return tokenizer(
-                examples["text"], 
-                padding="max_length",
-                truncation=True, 
-                max_length=max_seq_len, 
-                return_tensors="pt"
-            )
-
+    # map 함수 적용
     tokenized_dataset = combined_dataset.map(
         tokenize_function, 
         batched=True, 
         remove_columns=["text"]
     )
 
-    tokenized_dataset = combined_dataset.map(tokenize_function, batched=True, remove_columns=["text"])
     tokenized_dataset.set_format(type="torch", columns=["input_ids", "attention_mask"])
     print(f"DONE. Total samples: {len(tokenized_dataset)}")
     return tokenized_dataset

@@ -1,8 +1,8 @@
 import torch
-from mini_llada.models.diffusion import DiffusionModel
+from ko_mini_llada.models.modeling_ko_mini_llada import KoMiniLlada
 
 class Sampler():
-    def __init__(self, model: DiffusionModel, tokenizer):
+    def __init__(self, model, tokenizer):
         self.model = model
         self.tokenizer = tokenizer
         self.mask_id = tokenizer.mask_token_id

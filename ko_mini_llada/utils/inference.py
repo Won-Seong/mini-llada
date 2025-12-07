@@ -1,11 +1,10 @@
 import torch
 import os
 
-from mini_llada.models.configuration_ko_mini_llada import LladaConfig
-from mini_llada.models.modeling_ko_mini_llada import KoMiniLlada
-from mini_llada.data.dataset import get_tokenizer
-from mini_llada.models.diffusion import DiffusionModel
-from mini_llada.utils.sampler import Sampler
+from ko_mini_llada.models.configuration_ko_mini_llada import LladaConfig
+from ko_mini_llada.models.modeling_ko_mini_llada import KoMiniLlada
+from ko_mini_llada.data.dataset import get_tokenizer
+from ko_mini_llada.utils.sampler import Sampler
 
 class Inferencer:
     def __init__(self, device=None):

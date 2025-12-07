@@ -1,7 +1,7 @@
 import yaml
 import argparse
 import os
-from mini_llada.data.dataset import get_tokenizer, prepare_dataset
+from ko_mini_llada.data.dataset import get_tokenizer, prepare_dataset
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 

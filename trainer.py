@@ -6,8 +6,7 @@ import time
 from tqdm import tqdm
 import os
 
-from mini_llada.models.network import get_pretrained_bert_model, BERT_Wrapper
-from mini_llada.models.diffusion import DiffusionModel
+from ko_mini_llada.models.modeling_ko_mini_llada import KoMiniLlada
 
 class Trainer:
     def __init__(self, config:dict, tokenizer, dataset):

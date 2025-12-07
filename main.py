@@ -5,7 +5,7 @@ from ko_mini_llada.data.dataset import get_tokenizer, prepare_dataset
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-from trainer import Trainer
+from train import Trainer
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Mini LLaDA Trainer")

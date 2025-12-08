@@ -80,9 +80,7 @@ def main():
         weight_decay=0.01,
         
         # Evaluation & Saving
-        evaluation_strategy="steps",
         eval_steps=train_conf.get('eval_steps', 1000),
-        save_strategy="steps",
         save_steps=train_conf.get('eval_steps', 1000),
         save_total_limit=2,
         load_best_model_at_end=True,

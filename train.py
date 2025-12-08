@@ -10,8 +10,8 @@ from transformers import (
 )
 
 # model & config
-from ko_mini_llada.models.configuration_ko_mini_llada import LladaConfig
-from ko_mini_llada.models.modeling_ko_mini_llada import KoMiniLlada
+from ko_mini_llada.models.configuration_mini_llada import MiniLladaConfig
+from ko_mini_llada.models.modeling_mini_llada import MiniLlada
 from ko_mini_llada.data.dataset import prepare_dataset
 
 # callbacks
@@ -37,12 +37,12 @@ def main():
     # 2. Init Tokenizer & Model
     tokenizer = AutoTokenizer.from_pretrained(config['backbone_model_name'])
 
-    llada_config = LladaConfig(
+    llada_config = MiniLladaConfig(
         backbone_model_name=config['backbone_model_name'],
         mask_token_id=tokenizer.mask_token_id
     )
 
-    model = KoMiniLlada(llada_config)
+    model = MiniLlada(llada_config)
     model.resize_token_embeddings(len(tokenizer))
 
     # 3. prepare dataset

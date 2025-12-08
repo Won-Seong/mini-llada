@@ -34,8 +34,8 @@ class Sampler():
             
         return num_transfer
 
-    def apply_chat_template(self, prompt_text):
-        return self.tokenizer.apply_chat_template(prompt_text)
+    def apply_chat_template(self, prompt_text, tokenize=True):
+        return self.tokenizer.apply_chat_template(prompt_text, tokenize=tokenize, add_generation_prompt=True, return_tensors="pt").to(self.device)
 
     @torch.no_grad()
     def generate(self, messages, steps: int = 32, gen_len: int = 128, 

@@ -4,32 +4,42 @@ import torch.nn as nn
 import torch.nn.functional as F
 from transformers import PreTrainedModel, AutoModelForMaskedLM
 from transformers.modeling_outputs import MaskedLMOutput
-from ko_mini_llada.models.configuration_ko_mini_llada import LladaConfig
+from ko_mini_llada.models.configuration_mini_llada import MiniLladaConfig
 
-class KoMiniLlada(PreTrainedModel):
-    config_class = LladaConfig
+class MiniLlada(PreTrainedModel):
+    config_class = MiniLladaConfig
 
-    def __init__(self, config: LladaConfig):
+    def __init__(self, config: MiniLladaConfig):
         super().__init__(config)
-        self.config = config
         
-        # [수정] backbone과 network 중복 제거 -> network만 유지
-        # AutoModelForMaskedLM은 Encoder + LM Head를 모두 포함하므로 이것만 있으면 됩니다.
-        self.network = AutoModelForMaskedLM.from_pretrained(config.backbone_model_name)
-        
+        # 1. load backbone model
+        if hasattr(config, "backbone_config") and config.backbone_config:
+            self.network = AutoModelForMaskedLM.from_config(config.backbone_config)
+        else:
+            self.network = AutoModelForMaskedLM.from_pretrained(config.backbone_model_name)
+
         self.mask_token_id = config.mask_token_id
         
-        # 가중치 초기화 (PreTrainedModel 기능)
+        # 2. resize token embeddings if needed
+        if config.vocab_size > self.network.config.vocab_size:
+            self.resize_token_embeddings(config.vocab_size)
+
+        # 3. Initialize weights and apply final processing
         self.post_init()
 
-    # [추가해야 할 메서드 1] 임베딩 층 가져오기 
     def get_input_embeddings(self):
-        # self.network는 AutoModelForMaskedLM이므로, 그 안의 임베딩을 찾아 반환
         return self.network.get_input_embeddings()
 
-    # [추가해야 할 메서드 2] 임베딩 층 설정하기 (Resize 시 필요)
     def set_input_embeddings(self, value):
         self.network.set_input_embeddings(value)
+
+    def resize_token_embeddings(self, new_num_tokens: int = None, pad_to_multiple_of=None) -> torch.nn.Embedding:
+        # Resize the token embeddings of the internal network
+        model_embeds = self.network.resize_token_embeddings(new_num_tokens, pad_to_multiple_of)
+        # Update the config vocab size
+        self.config.vocab_size = model_embeds.num_embeddings
+        self.network.config.vocab_size = model_embeds.num_embeddings
+        return model_embeds
 
     def forward(self, input_ids, attention_mask=None, labels=None, **kwargs):
         # 1. Training Mode
@@ -37,7 +47,7 @@ class KoMiniLlada(PreTrainedModel):
             # Diffusion Forward Process
             t, noisy_x, mask_indices = self.forward_process(input_ids)
             
-            # Reverse Process (Logit 예측)
+            # Reverse Process
             # network outputs: MaskedLMOutput (logits, hidden_states, etc.)
             outputs = self.network(input_ids=noisy_x, attention_mask=attention_mask)
             logits = outputs.logits
@@ -45,7 +55,6 @@ class KoMiniLlada(PreTrainedModel):
             # Compute Loss
             loss = self.compute_diffusion_loss(logits, input_ids, mask_indices, attention_mask)
             
-            # [추천] HF Trainer 호환성을 위해 Dictionary 대신 Output 객체나 튜플 반환
             return MaskedLMOutput(loss=loss, logits=logits)
 
         # 2. Inference Mode
@@ -62,7 +71,7 @@ class KoMiniLlada(PreTrainedModel):
         random_matrix = torch.rand(B, L, device=device)
         mask_indices = (random_matrix < mask_probs)
 
-        noisy_x = torch.where(mask_indices, self.mask_token_id, input_ids) # self.mask_token_id 사용
+        noisy_x = torch.where(mask_indices, self.mask_token_id, input_ids)
         return t, noisy_x, mask_indices
 
     def compute_diffusion_loss(self, logits, input_ids, mask_indices, attention_mask):
@@ -70,7 +79,7 @@ class KoMiniLlada(PreTrainedModel):
         logits_flat = logits.view(-1, V)
         target_flat = input_ids.view(-1)
         
-        # 마스킹된 부분만 Loss 계산
+        # Calculate loss only for masked positions
         target_flat = torch.where(mask_indices.view(-1), target_flat, -100)
         
         if attention_mask is not None:

@@ -22,6 +22,15 @@ class KoMiniLlada(PreTrainedModel):
         # 가중치 초기화 (PreTrainedModel 기능)
         self.post_init()
 
+    # [추가해야 할 메서드 1] 임베딩 층 가져오기 
+    def get_input_embeddings(self):
+        # self.network는 AutoModelForMaskedLM이므로, 그 안의 임베딩을 찾아 반환
+        return self.network.get_input_embeddings()
+
+    # [추가해야 할 메서드 2] 임베딩 층 설정하기 (Resize 시 필요)
+    def set_input_embeddings(self, value):
+        self.network.set_input_embeddings(value)
+
     def forward(self, input_ids, attention_mask=None, labels=None, **kwargs):
         # 1. Training Mode
         if labels is not None and self.training:

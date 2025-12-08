@@ -1,7 +1,7 @@
 # ==========================================
 # 모델 설정 (Pre-trained Model)
 # ==========================================
-pretrained_model_name: klue/roberta-large
+backbone_model_name: klue/roberta-large
 max_seq_len: 512
 
 # ==========================================

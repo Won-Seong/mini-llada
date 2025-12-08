@@ -31,7 +31,7 @@ def get_sampler(model_name: str, checkpoint_path=None, device=None):
         else:
             raise FileNotFoundError(f"No checkpoint file found in {checkpoint_path}")
             
-        model.load_state_dict(state_dict)
+        model.load_state_dict(state_dict, strict=False)
 
     model.eval()
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)

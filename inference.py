@@ -10,7 +10,8 @@ def get_sampler(model_name: str, checkpoint_path=None, device=None):
     model = AutoModel.from_pretrained(
         load_path, 
         torch_dtype=torch.float16,
-        device_map=device
+        device_map=device,
+        trust_remote_code=True
     )
     
     model.eval()

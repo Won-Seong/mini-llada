@@ -34,6 +34,9 @@ class Sampler():
             
         return num_transfer
 
+    def apply_chat_template(self, prompt_text):
+        return self.tokenizer.apply_chat_template(prompt_text)
+
     @torch.no_grad()
     def generate(self, prompt_text, steps: int = 32, gen_len: int = 128, 
                  temperature=0.0, print_progress: bool = False):

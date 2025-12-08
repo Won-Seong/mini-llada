@@ -21,8 +21,8 @@ class GenerateSampleCallback(TrainerCallback):
         output = sampler.generate(
             prompt_text=self.prompt,
             steps=32,
-            gen_len=64,
-            temperature=0.0 # 정성 평가를 위해 Greedy 사용
+            gen_len=32,
+            temperature=0.0
         )
         
         print(f"Prompt: {self.prompt}")

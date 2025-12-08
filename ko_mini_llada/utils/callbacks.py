@@ -1,6 +1,6 @@
 import torch
 from transformers import TrainerCallback
-from mini_llada.utils.sampler import Sampler # 사용자님의 Sampler 재사용
+from ko_mini_llada.utils.sampler import Sampler # 사용자님의 Sampler 재사용
 
 class GenerateSampleCallback(TrainerCallback):
     def __init__(self, tokenizer, prompt="대한민국의 수도는 어디인가요?", device="cuda"):

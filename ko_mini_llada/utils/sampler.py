@@ -1,5 +1,4 @@
 import torch
-from ko_mini_llada.models.modeling_ko_mini_llada import KoMiniLlada
 
 class Sampler():
     def __init__(self, model, tokenizer):

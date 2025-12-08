@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from transformers import PreTrainedModel, AutoModelForMaskedLM
-from transformers.modeling_outputs import MaskedLMOutput # 표준 출력을 위해 사용 추천
+from transformers.modeling_outputs import MaskedLMOutput
 from ko_mini_llada.models.configuration_ko_mini_llada import LladaConfig
 
 class KoMiniLlada(PreTrainedModel):

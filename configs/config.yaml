@@ -12,7 +12,7 @@ max_seq_len: 512
 # q_col: 질문(Question)에 해당하는 컬럼 이름
 # a_col: 답변(Answer)에 해당하는 컬럼 이름
 dataset_config:
-  pre_training:
+  pretrain:
     dataset_list:
       - name: maywell/korean_textbooks
         subset: claude_evol
@@ -26,7 +26,7 @@ dataset_config:
     
     test_size: 0.002
 
-  fine_tuning:
+  sft:
     dataset_list:
       - name: maywell/ko_wikidata_QA
         split: train

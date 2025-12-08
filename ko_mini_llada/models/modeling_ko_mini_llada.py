@@ -51,7 +51,7 @@ class KoMiniLlada(PreTrainedModel):
         # 2. Inference Mode
         else:
             outputs = self.network(input_ids=input_ids, attention_mask=attention_mask)
-            return outputs.logits
+            return MaskedLMOutput(logits=outputs.logits)
 
     def forward_process(self, input_ids):
         B, L = input_ids.shape

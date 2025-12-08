@@ -38,13 +38,20 @@ class Sampler():
         return self.tokenizer.apply_chat_template(prompt_text)
 
     @torch.no_grad()
-    def generate(self, prompt_text, steps: int = 32, gen_len: int = 128, 
+    def generate(self, messages, steps: int = 32, gen_len: int = 128, 
                  temperature=0.0, print_progress: bool = False):
         
         self.model.eval()
 
         # 1. Input Setup
-        prompts_ids = self.tokenizer.encode(prompt_text, return_tensors='pt').to(self.device)
+        if isinstance(messages, list):
+            prompts_ids = self.tokenizer.apply_chat_template(
+                messages,
+                add_generation_prompt=True, # <--- 핵심: 봇이 대답할 차례라는 신호 추가
+                return_tensors="pt"
+            ).to(self.device)
+        else:
+            prompts_ids = self.tokenizer.encode(messages, return_tensors='pt').to(self.device)
         prompt_len = prompts_ids.size(1)
         
         mask_tokens = torch.full((1, gen_len), self.mask_id, dtype=torch.long, device=self.device)
@@ -64,7 +71,8 @@ class Sampler():
             num_transfer = self.get_num_transfer_tokens(gen_mask_index, steps_left)
             
             # 3. Model Prediction
-            logits = self.model(x)  # Shape: [1, seq_len, vocab_size]
+            outputs = self.model(x)  # Shape: [1, seq_len, vocab_size]
+            logits = outputs.logits
 
             # 4. Sampling (Gumbel Noise or Temperature)
             logits = logits.to(torch.float64)

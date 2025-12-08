@@ -81,7 +81,7 @@ def main():
         
         # Evaluation & Saving
         save_strategy="steps",
-        evaluation_strategy="steps",
+        eval_strategy="steps",
         eval_steps=train_conf.get('eval_steps', 1000),
         save_steps=train_conf.get('eval_steps', 1000),
         save_total_limit=2,

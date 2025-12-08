@@ -26,6 +26,7 @@ def get_parser():
     return parser
 
 def main():
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
     parser = get_parser()
     args_cli = parser.parse_args()
 

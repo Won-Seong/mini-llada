@@ -62,12 +62,12 @@ def main():
         # 3. format for chat
         tokenizer, model = setup_chat_format(tokenizer, model)
 
-        # Set config
-        MiniLLaDAConfig.register_for_auto_class()
+        # # Set config
+        # MiniLLaDAConfig.register_for_auto_class()
         
-        # register model class for auto_map
-        MiniLLaDA.register_for_auto_class("AutoModel")
-        MiniLLaDA.register_for_auto_class("AutoModelForMaskedLM")
+        # # register model class for auto_map
+        # MiniLLaDA.register_for_auto_class("AutoModel")
+        # MiniLLaDA.register_for_auto_class("AutoModelForMaskedLM")
         
         print("✅ Custom classes registered with auto_map.")
 
@@ -111,7 +111,7 @@ def main():
         eval_strategy="steps",
         eval_steps=train_conf.get('eval_steps', 1000),
         save_steps=train_conf.get('eval_steps', 1000),
-        save_total_limit=2,
+        save_total_limit=1,
         load_best_model_at_end=True,
         metric_for_best_model="loss",
         
@@ -146,10 +146,10 @@ def main():
     print("🚀 Start Training...")
     trainer.train(resume_from_checkpoint=args_cli.resume_from_checkpoint)
 
-    # 7. Save final model
-    print(f"💾 Saving final model to {args_cli.output_dir}/final")
-    trainer.save_model(os.path.join(args_cli.output_dir, "final"))
-    tokenizer.save_pretrained(os.path.join(args_cli.output_dir, "final"))
+    # # 7. Save final model
+    # print(f"💾 Saving final model to {args_cli.output_dir}/final")
+    # trainer.save_model(os.path.join(args_cli.output_dir, "final"))
+    # tokenizer.save_pretrained(os.path.join(args_cli.output_dir, "final"))
 
 if __name__ == "__main__":
     main()

@@ -16,9 +16,9 @@ class MiniLLaDA(PreTrainedModel):
         self.network = AutoModelForMaskedLM.from_pretrained(config.backbone_model_name)
         self.mask_token_id = config.mask_token_id
         
-        # # 2. resize token embeddings if needed
-        # if config.vocab_size > self.network.config.vocab_size:
-        #     self.resize_token_embeddings(config.vocab_size)
+        # 2. resize token embeddings if needed
+        if config.vocab_size > self.network.config.vocab_size:
+            self.resize_token_embeddings(config.vocab_size)
 
     def get_input_embeddings(self):
         return self.network.get_input_embeddings()

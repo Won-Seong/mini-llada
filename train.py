@@ -12,7 +12,7 @@ from transformers import (
 
 # model & config
 from ko_mini_llada.models.configuration_mini_llada import MiniLLaDAConfig
-from ko_mini_llada.models.modeling_mini_llada import MiniLlada
+from ko_mini_llada.models.modeling_mini_llada import MiniLLaDA
 from ko_mini_llada.data.dataset import prepare_dataset
 
 # callbacks
@@ -41,22 +41,35 @@ def main():
 
     # 2. Load tokenizer and model
     try:
-        tokenizer = AutoTokenizer.from_pretrained(args_cli.model_name)
-        model = AutoModel.from_pretrained(args_cli.model_name)
+        # load if the model exists in the Hub
+        tokenizer = AutoTokenizer.from_pretrained(args_cli.model_name, trust_remote_code=True)
+        model = AutoModel.from_pretrained(args_cli.model_name, trust_remote_code=True)
+    
     except Exception as e:
-        print(f"No model in Hub. Create a local model.")
+        print(f"⚠️ No model in Hub or Error loading. Creating a local model... ({e})")
+        
+        # 1. initialize tokenizer & config
         tokenizer = AutoTokenizer.from_pretrained(config['backbone_model_name'])
-
+        
         llada_config = MiniLLaDAConfig(
             backbone_model_name=config['backbone_model_name'],
             mask_token_id=tokenizer.mask_token_id,
         )
 
-        model = MiniLlada(llada_config)
+        # 2. initialize model
+        model = MiniLLaDA(llada_config)
+        
+        # 3. format for chat
         tokenizer, model = setup_chat_format(tokenizer, model)
 
-        llada_config.register_for_auto_class()
-        model.register_for_auto_class("AutoModelForMaskedLM")
+        # Set config
+        MiniLLaDAConfig.register_for_auto_class()
+        
+        # register model class for auto_map
+        MiniLLaDA.register_for_auto_class("AutoModel")
+        MiniLLaDA.register_for_auto_class("AutoModelForMaskedLM")
+        
+        print("✅ Custom classes registered with auto_map.")
 
     # 3. prepare dataset
     full_dataset = prepare_dataset(

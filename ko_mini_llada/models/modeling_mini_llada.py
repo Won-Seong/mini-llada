@@ -6,7 +6,7 @@ from transformers import PreTrainedModel, AutoModelForMaskedLM
 from transformers.modeling_outputs import MaskedLMOutput
 from ko_mini_llada.models.configuration_mini_llada import MiniLLaDAConfig
 
-class MiniLlada(PreTrainedModel):
+class MiniLLaDA(PreTrainedModel):
     config_class = MiniLLaDAConfig
 
     def __init__(self, config: MiniLLaDAConfig):

@@ -5,7 +5,8 @@ import torch
 from transformers import (
     Trainer, 
     TrainingArguments,
-    AutoTokenizer, 
+    AutoTokenizer,
+    AutoModel, 
     DataCollatorWithPadding
 )
 
@@ -17,8 +18,12 @@ from ko_mini_llada.data.dataset import prepare_dataset
 # callbacks
 from ko_mini_llada.utils.callbacks import GenerateSampleCallback 
 
+# helper
+from ko_mini_llada.utils.helper import setup_chat_format
+
 def get_parser():
     parser = argparse.ArgumentParser(description="Train KoMiniLlada Model")
+    parser.add_argument("--model_name", type=str, default="JuyeopDang/KoMiniLLaDA-0.7B-Base", help="Model name or path.")
     parser.add_argument("--config_file", type=str, default="configs/config.yaml", help="Path to the config file.")
     parser.add_argument("--output_dir", type=str, default="checkpoints", help="Directory to save checkpoints.")
     parser.add_argument("--mode", type=str, default="pretrain", choices=["pretrain", "sft"], help="Training mode: pretrain or sft.")
@@ -34,20 +39,24 @@ def main():
     with open(args_cli.config_file, "r") as f:
         config = yaml.safe_load(f)
 
-    # 2. Init Tokenizer & Model
-    tokenizer = AutoTokenizer.from_pretrained(config['backbone_model_name'])
+    # 2. Load tokenizer and model
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(args_cli.model_name)
+        model = AutoModel.from_pretrained(args_cli.model_name)
+    except Exception as e:
+        print(f"No model in Hub. Create a local model.")
+        tokenizer = AutoTokenizer.from_pretrained(config['backbone_model_name'])
 
-    llada_config = MiniLladaConfig(
-        backbone_model_name=config['backbone_model_name'],
-        mask_token_id=tokenizer.mask_token_id
-    )
+        llada_config = MiniLladaConfig(
+            backbone_model_name=config['backbone_model_name'],
+        )
 
-    model = MiniLlada(llada_config)
-    model.resize_token_embeddings(len(tokenizer))
+        model = MiniLlada(llada_config)
+        tokenizer, model = setup_chat_format(tokenizer, model)
 
     # 3. prepare dataset
     full_dataset = prepare_dataset(
-        tokenizer, 
+        tokenizer,
         dataset_config=config['dataset_config']['pretrain' if args_cli.mode == 'pretrain' else 'sft']['dataset_list'], 
         max_seq_len=config['max_seq_len'],
         mode=args_cli.mode
@@ -99,7 +108,11 @@ def main():
         # Logging
         logging_steps=100,
         report_to="none", 
-        run_name="mini-llada-run"
+        run_name="mini-llada-run",
+
+        # Hub
+        push_to_hub=True,
+        hub_model_id=args_cli.model_name
     )
 
     # 5. Init Trainer

@@ -13,19 +13,12 @@ class MiniLlada(PreTrainedModel):
         super().__init__(config)
         
         # 1. load backbone model
-        if hasattr(config, "backbone_config") and config.backbone_config:
-            self.network = AutoModelForMaskedLM.from_config(config.backbone_config)
-        else:
-            self.network = AutoModelForMaskedLM.from_pretrained(config.backbone_model_name)
-
+        self.network = AutoModelForMaskedLM.from_pretrained(config.backbone_model_name)
         self.mask_token_id = config.mask_token_id
         
-        # 2. resize token embeddings if needed
-        if config.vocab_size > self.network.config.vocab_size:
-            self.resize_token_embeddings(config.vocab_size)
-
-        # 3. Initialize weights and apply final processing
-        self.post_init()
+        # # 2. resize token embeddings if needed
+        # if config.vocab_size > self.network.config.vocab_size:
+        #     self.resize_token_embeddings(config.vocab_size)
 
     def get_input_embeddings(self):
         return self.network.get_input_embeddings()

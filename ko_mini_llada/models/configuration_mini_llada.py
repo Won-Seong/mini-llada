@@ -19,7 +19,6 @@ class MiniLladaConfig(PretrainedConfig):
 
         # 3. set the essential attributes
         self.backbone_config = backbone_config
-        self.hidden_size = backbone_config.hidden_size
         self.vocab_size = backbone_config.vocab_size
         self.mask_token_id = backbone_config.mask_token_id
         self.backbone_model_name = backbone_model_name

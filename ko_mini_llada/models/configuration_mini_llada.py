@@ -1,6 +1,6 @@
 from transformers import PretrainedConfig, AutoConfig
 
-class MiniLladaConfig(PretrainedConfig):
+class MiniLLaDAConfig(PretrainedConfig):
     model_type = "mini-llada"
 
     def __init__(

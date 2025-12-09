@@ -11,7 +11,7 @@ from transformers import (
 )
 
 # model & config
-from ko_mini_llada.models.configuration_mini_llada import MiniLladaConfig
+from ko_mini_llada.models.configuration_mini_llada import MiniLLaDAConfig
 from ko_mini_llada.models.modeling_mini_llada import MiniLlada
 from ko_mini_llada.data.dataset import prepare_dataset
 
@@ -47,13 +47,16 @@ def main():
         print(f"No model in Hub. Create a local model.")
         tokenizer = AutoTokenizer.from_pretrained(config['backbone_model_name'])
 
-        llada_config = MiniLladaConfig(
+        llada_config = MiniLLaDAConfig(
             backbone_model_name=config['backbone_model_name'],
             mask_token_id=tokenizer.mask_token_id,
         )
 
         model = MiniLlada(llada_config)
         tokenizer, model = setup_chat_format(tokenizer, model)
+
+        llada_config.register_for_auto_class()
+        model.register_for_auto_class("AutoModelForMaskedLM")
 
     # 3. prepare dataset
     full_dataset = prepare_dataset(

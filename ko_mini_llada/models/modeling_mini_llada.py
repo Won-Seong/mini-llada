@@ -4,12 +4,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 from transformers import PreTrainedModel, AutoModelForMaskedLM
 from transformers.modeling_outputs import MaskedLMOutput
-from ko_mini_llada.models.configuration_mini_llada import MiniLladaConfig
+from ko_mini_llada.models.configuration_mini_llada import MiniLLaDAConfig
 
 class MiniLlada(PreTrainedModel):
-    config_class = MiniLladaConfig
+    config_class = MiniLLaDAConfig
 
-    def __init__(self, config: MiniLladaConfig):
+    def __init__(self, config: MiniLLaDAConfig):
         super().__init__(config)
         
         # 1. load backbone model

@@ -1,7 +1,7 @@
 from transformers import PretrainedConfig, AutoConfig
 
 class MiniLLaDAConfig(PretrainedConfig):
-    model_type = "roberta"
+    model_type = "mini-llada"
 
     def __init__(
         self,

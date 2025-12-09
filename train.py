@@ -62,12 +62,12 @@ def main():
         # 3. format for chat
         tokenizer, model = setup_chat_format(tokenizer, model)
 
-        # # Set config
-        # MiniLLaDAConfig.register_for_auto_class()
+        # Set config
+        MiniLLaDAConfig.register_for_auto_class()
         
-        # # register model class for auto_map
-        # MiniLLaDA.register_for_auto_class("AutoModel")
-        # MiniLLaDA.register_for_auto_class("AutoModelForMaskedLM")
+        # register model class for auto_map
+        MiniLLaDA.register_for_auto_class("AutoModel")
+        MiniLLaDA.register_for_auto_class("AutoModelForMaskedLM")
         
         print("✅ Custom classes registered with auto_map.")
 

@@ -5,6 +5,8 @@ from safetensors.torch import load_file  # safetensors 사용 시 필요
 from transformers import AutoModel, AutoTokenizer, AutoConfig
 
 from ko_mini_llada.utils.sampler import Sampler
+from ko_mini_llada.models.configuration_mini_llada import MiniLLaDAConfig
+from ko_mini_llada.models.modeling_mini_llada import MiniLLaDA
 
 def get_sampler(model_name: str, checkpoint_path=None, device=None):
     print(f"Loading model architecture from Hub: {model_name}")
@@ -15,6 +17,9 @@ def get_sampler(model_name: str, checkpoint_path=None, device=None):
         torch_dtype=torch.float16,
         device_map=device
     )
+
+    AutoConfig.register("mini-llada", MiniLLaDAConfig)
+    AutoModel.register(MiniLLaDAConfig, MiniLLaDA)
     
     if checkpoint_path:
         print(f"Overwriting weights from checkpoint: {checkpoint_path}")

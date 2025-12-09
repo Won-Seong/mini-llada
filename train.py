@@ -49,6 +49,7 @@ def main():
 
         llada_config = MiniLladaConfig(
             backbone_model_name=config['backbone_model_name'],
+            mask_token_id=tokenizer.mask_token_id,
         )
 
         model = MiniLlada(llada_config)

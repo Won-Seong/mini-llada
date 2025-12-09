@@ -6,6 +6,7 @@ class MiniLladaConfig(PretrainedConfig):
     def __init__(
         self,
         backbone_model_name="klue/roberta-large",
+        mask_token_id=4,
         **kwargs,
     ):
         # 1. get backbone config
@@ -20,7 +21,7 @@ class MiniLladaConfig(PretrainedConfig):
         # 3. set the essential attributes
         self.backbone_config = backbone_config
         self.vocab_size = backbone_config.vocab_size
-        self.mask_token_id = backbone_config.mask_token_id
+        self.mask_token_id = mask_token_id
         self.backbone_model_name = backbone_model_name
 
         super().__init__(**kwargs)

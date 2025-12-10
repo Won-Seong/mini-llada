@@ -13,7 +13,7 @@ class MiniLLaDA(PreTrainedModel):
         super().__init__(config)
         
         # 1. load backbone model
-        self.network = AutoModelForMaskedLM.from_pretrained(config.backbone_model_name)
+        self.network = AutoModelForMaskedLM.from_pretrained(config.backbone_model_name, trust_remote_code=True)
         self.mask_token_id = config.mask_token_id
         
         # 2. resize token embeddings if needed

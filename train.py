@@ -67,7 +67,7 @@ def main():
         
         # register model class for auto_map
         MiniLLaDA.register_for_auto_class("AutoModel")
-        MiniLLaDA.register_for_auto_class("AutoModelForMaskedLM")
+        #MiniLLaDA.register_for_auto_class("AutoModelForMaskedLM")
         
         print("✅ Custom classes registered with auto_map.")
 

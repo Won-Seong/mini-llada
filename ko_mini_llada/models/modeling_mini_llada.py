@@ -17,8 +17,8 @@ class MiniLLaDA(PreTrainedModel):
         self.mask_token_id = config.mask_token_id
 
     def forward(self, input_ids, attention_mask=None, labels=None, **kwargs):
-        # 1. Training Mode
-        if labels is not None and self.training:
+        # 1. Training and Evaluation Mode
+        if labels is not None:
             # Diffusion Forward Process
             t, noisy_x, mask_indices = self.forward_process(input_ids)
             

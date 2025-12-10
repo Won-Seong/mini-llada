@@ -127,7 +127,6 @@ def main():
         run_name="mini-llada-run",
 
         # Hub
-        hub_strategy="end",
         push_to_hub=True,
         hub_model_id=args_cli.model_name
     )

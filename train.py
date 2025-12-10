@@ -60,7 +60,7 @@ def main():
         model = MiniLLaDA(llada_config)
         
         # 3. format for chat
-        tokenizer, model = setup_chat_format(tokenizer, model)
+        tokenizer = setup_chat_format(tokenizer)
 
         # Set config
         MiniLLaDAConfig.register_for_auto_class()

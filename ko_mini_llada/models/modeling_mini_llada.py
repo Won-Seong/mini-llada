@@ -15,24 +15,6 @@ class MiniLLaDA(PreTrainedModel):
         # 1. load backbone model
         self.network = AutoModelForMaskedLM.from_pretrained(config.backbone_model_name, trust_remote_code=True)
         self.mask_token_id = config.mask_token_id
-        
-        # 2. resize token embeddings if needed
-        if self.network.config.vocab_size != config.vocab_size:
-            self.network.resize_token_embeddings(config.vocab_size)
-
-    def get_input_embeddings(self):
-        return self.network.get_input_embeddings()
-
-    def set_input_embeddings(self, value):
-        self.network.set_input_embeddings(value)
-
-    def resize_token_embeddings(self, new_num_tokens: int = None, pad_to_multiple_of=None) -> torch.nn.Embedding:
-        # Resize the token embeddings of the internal network
-        model_embeds = self.network.resize_token_embeddings(new_num_tokens, pad_to_multiple_of)
-        # Update the config vocab size
-        self.config.vocab_size = model_embeds.num_embeddings
-        self.network.config.vocab_size = model_embeds.num_embeddings
-        return model_embeds
 
     def forward(self, input_ids, attention_mask=None, labels=None, **kwargs):
         # 1. Training Mode

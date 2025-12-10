@@ -20,7 +20,6 @@ class MiniLLaDAConfig(PretrainedConfig):
 
         # 3. set the essential attributes
         self.backbone_config = backbone_config
-        self.vocab_size = backbone_config.vocab_size
         self.mask_token_id = mask_token_id
         self.backbone_model_name = backbone_model_name
 

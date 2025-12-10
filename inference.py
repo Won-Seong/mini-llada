@@ -18,25 +18,23 @@ def get_sampler(model_name: str, checkpoint_path=None, device=None):
         device_map=device
     )
 
-    AutoConfig.register("mini-llada", MiniLLaDAConfig)
-    AutoModel.register(MiniLLaDAConfig, MiniLLaDA)
+    # AutoConfig.register("mini-llada", MiniLLaDAConfig)
+    # AutoModel.register(MiniLLaDAConfig, MiniLLaDA)
     
-    if checkpoint_path:
+    if checkpoint_path is not None:
         print(f"Overwriting weights from checkpoint: {checkpoint_path}")
         
-        bin_path = os.path.join(checkpoint_path, "pytorch_model.bin")
+        #bin_path = os.path.join(checkpoint_path, "pytorch_model.bin")
         safe_path = os.path.join(checkpoint_path, "model.safetensors")
         
         state_dict = None
         
-        if os.path.exists(bin_path):
-            state_dict = torch.load(bin_path, map_location="cpu")
-        elif os.path.exists(safe_path):
+        if os.path.exists(safe_path):
             state_dict = load_file(safe_path)
         else:
             raise FileNotFoundError(f"No checkpoint file found in {checkpoint_path}")
             
-        model.load_state_dict(state_dict, strict=False)
+        model.load_state_dict(state_dict)
 
     model.eval()
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)

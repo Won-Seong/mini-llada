@@ -28,6 +28,7 @@ def get_parser():
     parser.add_argument("--output_dir", type=str, default="checkpoints", help="Directory to save checkpoints.")
     parser.add_argument("--mode", type=str, default="pretrain", choices=["pretrain", "sft"], help="Training mode: pretrain or sft.")
     parser.add_argument("--resume_from_checkpoint", type=str, default=None, help="Path to a checkpoint to resume training from.")
+    parser.add_argument("--from_scratch", action="store_true", help="Whether to train the model from scratch.")
     return parser
 
 def main():
@@ -40,14 +41,8 @@ def main():
         config = yaml.safe_load(f)
 
     # 2. Load tokenizer and model
-    try:
-        # load if the model exists in the Hub
-        tokenizer = AutoTokenizer.from_pretrained(args_cli.model_name, trust_remote_code=True)
-        model = AutoModel.from_pretrained(args_cli.model_name, trust_remote_code=True)
-    
-    except Exception as e:
-        print(f"⚠️ No model in Hub or Error loading. Creating a local model... ({e})")
-        
+    if args_cli.from_scratch:
+        print("⚠️ Training from scratch. Initializing new model and tokenizer.")
         # 1. initialize tokenizer & config
         tokenizer = AutoTokenizer.from_pretrained(config['backbone_model_name'])
         
@@ -69,6 +64,14 @@ def main():
         MiniLLaDA.register_for_auto_class("AutoModel")
         
         print("✅ Custom classes registered with auto_map.")
+    else:    
+        try:
+            # load if the model exists in the Hub
+            tokenizer = AutoTokenizer.from_pretrained(args_cli.model_name, trust_remote_code=True)
+            model = AutoModel.from_pretrained(args_cli.model_name, trust_remote_code=True)
+        except Exception as e:
+            print(f"⚠️ No model in Hub or Error loading. Creating a local model... ({e})")
+            return 0
 
     # 3. prepare dataset
     full_dataset = prepare_dataset(
@@ -101,8 +104,8 @@ def main():
         num_train_epochs=train_conf.get('num_epochs', 3),
         per_device_train_batch_size=train_conf.get('batch_size', 8),
         per_device_eval_batch_size=train_conf.get('batch_size', 8),
-        gradient_accumulation_steps=train_conf.get('gradient_accumulation_steps', 1),
-        learning_rate=float(train_conf.get('learning_rate', 5e-5)),
+        gradient_accumulation_steps=train_conf.get('gradient_accumulation_steps', 2),
+        learning_rate=float(train_conf.get('learning_rate', 1e-5)),
         weight_decay=0.01,
         
         # Evaluation & Saving

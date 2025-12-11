@@ -89,9 +89,9 @@ def main():
     eval_dataset = split_datasets['test']
 
     # generate 'labels' for Trainer
-    print("Mapping labels...")
-    train_dataset = train_dataset.map(lambda x: {'labels': x['input_ids']})
-    eval_dataset = eval_dataset.map(lambda x: {'labels': x['input_ids']})
+    # print("Mapping labels...")
+    # train_dataset = train_dataset.map(lambda x: {'labels': x['input_ids']})
+    # eval_dataset = eval_dataset.map(lambda x: {'labels': x['input_ids']})
 
     # 4. Set TrainingArguments
     train_conf = config['train_config']

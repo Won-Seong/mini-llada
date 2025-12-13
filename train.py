@@ -82,7 +82,7 @@ def main():
     )
 
     # 3-1. train/test split
-    test_size = config['dataset_config'].get('pretrain' if args_cli.mode == 'pretrain' else 'sft').get('test_size', 0.01)
+    test_size = config['dataset_config'].get('pretrain' if args_cli.mode == 'pretrain' else 'sft').get('test_size', 0.001)
     split_datasets = full_dataset.train_test_split(test_size=test_size, seed=config.get('random_seed', 42))
     
     train_dataset = split_datasets['train']
@@ -97,17 +97,17 @@ def main():
         
         # Training Parameters
         num_train_epochs=train_conf.get('num_epochs', 3),
-        per_device_train_batch_size=train_conf.get('batch_size', 4),
-        per_device_eval_batch_size=train_conf.get('batch_size', 4),
-        gradient_accumulation_steps=train_conf.get('gradient_accumulation_steps', 2),
+        per_device_train_batch_size=train_conf.get('batch_size', 8),
+        per_device_eval_batch_size=train_conf.get('batch_size', 8),
+        gradient_accumulation_steps=train_conf.get('gradient_accumulation_steps', 1),
         learning_rate=float(train_conf.get('learning_rate', 1e-5)),
         max_grad_norm=1.0,
         
         # Evaluation & Saving
         save_strategy="steps",
         eval_strategy="steps",
-        eval_steps=train_conf.get('eval_steps', 1000),
-        save_steps=train_conf.get('eval_steps', 1000),
+        eval_steps=train_conf.get('eval_steps', 10000),
+        save_steps=train_conf.get('eval_steps', 10000),
         save_total_limit=1,
         load_best_model_at_end=True,
         metric_for_best_model="loss",
@@ -120,7 +120,7 @@ def main():
         remove_unused_columns=False, 
         
         # Logging
-        logging_steps=100,
+        logging_steps=1000,
         report_to="none", 
         run_name="mini-llada-run",
 

@@ -150,8 +150,8 @@ def main():
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
     sample = train_dataset[[0]]
     sample = data_collator(sample)
-    input_ids = torch.tensor(sample['input_ids']).unsqueeze(0).to(model.device)
-    attention_mask = torch.tensor(sample['attention_mask']).unsqueeze(0).to(model.device)
+    input_ids = torch.tensor(sample['input_ids']).to(model.device)
+    attention_mask = torch.tensor(sample['attention_mask']).to(model.device)
     # labels는 input_ids와 동일하게 (MiniLLaDA 내부 로직용)
     labels = input_ids.clone()
 

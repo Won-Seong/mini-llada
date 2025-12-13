@@ -159,7 +159,7 @@ def main():
     model.eval()
     with torch.no_grad():
         outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
-        print(f"🔍 [DEBUG] Initial Manual Loss: {outputs.loss.item()}")
+        print(f"🔍 [DEBUG] Initial Manual Loss: {outputs}")
     model.train()
 
 

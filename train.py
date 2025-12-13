@@ -88,11 +88,6 @@ def main():
     train_dataset = split_datasets['train']
     eval_dataset = split_datasets['test']
 
-    # generate 'labels' for Trainer
-    # print("Mapping labels...")
-    # train_dataset = train_dataset.map(lambda x: {'labels': x['input_ids']})
-    # eval_dataset = eval_dataset.map(lambda x: {'labels': x['input_ids']})
-
     # 4. Set TrainingArguments
     train_conf = config['train_config']
     
@@ -107,6 +102,7 @@ def main():
         gradient_accumulation_steps=train_conf.get('gradient_accumulation_steps', 2),
         learning_rate=float(train_conf.get('learning_rate', 1e-5)),
         weight_decay=0.01,
+        max_grad_norm=1.0,
         
         # Evaluation & Saving
         save_strategy="steps",
@@ -118,7 +114,7 @@ def main():
         metric_for_best_model="loss",
         
         # Hardware
-        fp16=torch.cuda.is_available(),
+        bf16=True,
         dataloader_num_workers=train_conf.get('num_workers', 4),
         
         # Custom Model Settings

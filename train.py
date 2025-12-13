@@ -155,6 +155,10 @@ def main():
     # labels는 input_ids와 동일하게 (MiniLLaDA 내부 로직용)
     labels = input_ids.clone()
 
+    print(tokenizer.decode(input_ids[0], skip_special_tokens=True))
+    print(tokenizer.decode(labels[0], skip_special_tokens=True))
+    print(sample)
+
     # 2. 모델에 넣어보기 (Trainer 거치지 않고 직접)
     model.eval()
     with torch.no_grad():

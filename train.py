@@ -120,7 +120,7 @@ def main():
         remove_unused_columns=False, 
         
         # Logging
-        logging_steps=1,
+        logging_steps=100,
         report_to="none", 
         run_name="mini-llada-run",
 

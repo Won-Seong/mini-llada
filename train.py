@@ -127,7 +127,8 @@ def main():
 
         # Hub
         push_to_hub=True,
-        hub_model_id=args_cli.model_name
+        hub_model_id=args_cli.model_name,
+        hub_strategy="end"
     )
 
     # 5. Init Trainer
@@ -156,11 +157,10 @@ def main():
     print(sample)
 
     # 2. 모델에 넣어보기 (Trainer 거치지 않고 직접)
-    model.eval()
+    model.train()
     with torch.no_grad():
         outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
         print(f"🔍 [DEBUG] Initial Manual Loss: {outputs}")
-    model.train()
 
 
     # 6. Train

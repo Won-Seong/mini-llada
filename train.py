@@ -125,7 +125,7 @@ def main():
         remove_unused_columns=False, 
         
         # Logging
-        logging_steps=100,
+        logging_steps=1,
         report_to="none", 
         run_name="mini-llada-run",
 
@@ -143,6 +143,23 @@ def main():
         data_collator=DataCollatorWithPadding(tokenizer),
         callbacks=[GenerateSampleCallback(tokenizer)]
     )
+
+    print("🔍 [DEBUG] Checking Initial Loss before Trainer loop...")
+
+    # 1. 학습 데이터에서 샘플 하나 뽑기
+    sample = train_dataset[0]
+    input_ids = torch.tensor(sample['input_ids']).unsqueeze(0).to(model.device)
+    attention_mask = torch.tensor(sample['attention_mask']).unsqueeze(0).to(model.device)
+    # labels는 input_ids와 동일하게 (MiniLLaDA 내부 로직용)
+    labels = input_ids.clone()
+
+    # 2. 모델에 넣어보기 (Trainer 거치지 않고 직접)
+    model.eval()
+    with torch.no_grad():
+        outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+        print(f"🔍 [DEBUG] Initial Manual Loss: {outputs.loss.item()}")
+    model.train()
+
 
     # 6. Train
     print("🚀 Start Training...")

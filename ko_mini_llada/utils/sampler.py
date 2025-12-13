@@ -40,14 +40,13 @@ class Sampler():
     @torch.no_grad()
     def generate(self, messages, steps: int = 32, gen_len: int = 128, 
                  temperature=0.0, print_progress: bool = False):
-        
         self.model.eval()
 
         # 1. Input Setup
         if isinstance(messages, list):
             prompts_ids = self.tokenizer.apply_chat_template(
                 messages,
-                add_generation_prompt=True, # <--- 핵심: 봇이 대답할 차례라는 신호 추가
+                add_generation_prompt=True,
                 return_tensors="pt"
             ).to(self.device)
         else:

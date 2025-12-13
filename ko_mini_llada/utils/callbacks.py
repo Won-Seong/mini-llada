@@ -1,6 +1,6 @@
 import torch
 from transformers import TrainerCallback
-from ko_mini_llada.utils.sampler import Sampler # 사용자님의 Sampler 재사용
+from ko_mini_llada.utils.sampler import Sampler
 
 class GenerateSampleCallback(TrainerCallback):
     def __init__(self, tokenizer, prompt="대한민국의 수도는 어디인가요?", device="cuda"):
@@ -9,19 +9,19 @@ class GenerateSampleCallback(TrainerCallback):
         self.device = device
         
     def on_evaluate(self, args, state, control, model=None, **kwargs):
-        # 평가(Evaluation)가 끝날 때마다 실행됨
+        # generate sample at the end of each epoch
         print(f"\n[Epoch {state.epoch:.2f}] Generating sample...")
         
-        # 모델이 DDP 등으로 감싸져 있을 수 있으므로 unwrap
+        # unwrap model if it is wrapped in DataParallel or DistributedDataParallel
         if hasattr(model, 'module'):
             model = model.module
             
-        # Sampler 초기화 및 생성
+        # Init the sampler and generate
         sampler = Sampler(model, self.tokenizer)
         output = sampler.generate(
-            prompt_text=self.prompt,
-            steps=32,
-            gen_len=32,
+            messages=self.prompt,
+            steps=16,
+            gen_len=16,
             temperature=0.0
         )
         

@@ -97,11 +97,10 @@ def main():
         
         # Training Parameters
         num_train_epochs=train_conf.get('num_epochs', 3),
-        per_device_train_batch_size=train_conf.get('batch_size', 8),
-        per_device_eval_batch_size=train_conf.get('batch_size', 8),
+        per_device_train_batch_size=train_conf.get('batch_size', 4),
+        per_device_eval_batch_size=train_conf.get('batch_size', 4),
         gradient_accumulation_steps=train_conf.get('gradient_accumulation_steps', 2),
         learning_rate=float(train_conf.get('learning_rate', 1e-5)),
-        weight_decay=0.01,
         max_grad_norm=1.0,
         
         # Evaluation & Saving
@@ -141,36 +140,14 @@ def main():
         callbacks=[GenerateSampleCallback(tokenizer)]
     )
 
-    print("🔍 [DEBUG] Checking Initial Loss before Trainer loop...")
-
-    # 1. 학습 데이터에서 샘플 하나 뽑기
-    data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
-    sample = train_dataset[[0]]
-    sample = data_collator(sample)
-    input_ids = torch.tensor(sample['input_ids']).to(model.device)
-    attention_mask = torch.tensor(sample['attention_mask']).to(model.device)
-    # labels는 input_ids와 동일하게 (MiniLLaDA 내부 로직용)
-    labels = input_ids.clone()
-
-    print(tokenizer.decode(input_ids[0], skip_special_tokens=True))
-    print(tokenizer.decode(labels[0], skip_special_tokens=True))
-    print(sample)
-
-    # 2. 모델에 넣어보기 (Trainer 거치지 않고 직접)
-    model.train()
-    with torch.no_grad():
-        outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
-        print(f"🔍 [DEBUG] Initial Manual Loss: {outputs}")
-
-
     # 6. Train
     print("🚀 Start Training...")
     trainer.train(resume_from_checkpoint=args_cli.resume_from_checkpoint)
 
-    # # 7. Save final model
-    # print(f"💾 Saving final model to {args_cli.output_dir}/final")
-    # trainer.save_model(os.path.join(args_cli.output_dir, "final"))
-    # tokenizer.save_pretrained(os.path.join(args_cli.output_dir, "final"))
+    # 7. Save final model
+    print(f"💾 Saving final model to {args_cli.output_dir}/final")
+    trainer.save_model(os.path.join(args_cli.output_dir, "final"))
+    tokenizer.save_pretrained(os.path.join(args_cli.output_dir, "final"))
 
 if __name__ == "__main__":
     main()

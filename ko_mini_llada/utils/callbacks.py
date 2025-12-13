@@ -3,10 +3,15 @@ from transformers import TrainerCallback
 from ko_mini_llada.utils.sampler import Sampler
 
 class GenerateSampleCallback(TrainerCallback):
-    def __init__(self, tokenizer, prompt="대한민국의 수도는 어디인가요?", device="cuda"):
+    def __init__(self, tokenizer, prompt="대한민국의 수도는 어디인가요?", device="cuda", mode="pretrain"):
         self.tokenizer = tokenizer
         self.prompt = prompt
         self.device = device
+
+        if mode == "sft":
+            self.prompt = [
+                {"role": "user", "content": self.prompt}
+            ]
         
     def on_evaluate(self, args, state, control, model=None, **kwargs):
         # generate sample at the end of each epoch

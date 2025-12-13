@@ -137,7 +137,7 @@ def main():
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
         data_collator=DataCollatorWithPadding(tokenizer),
-        callbacks=[GenerateSampleCallback(tokenizer)]
+        callbacks=[GenerateSampleCallback(tokenizer, mode=args_cli.mode)]  # custom callback for sample generation
     )
 
     # 6. Train

@@ -102,6 +102,7 @@ def main():
         gradient_accumulation_steps=train_conf.get('gradient_accumulation_steps', 1),
         learning_rate=float(train_conf.get('learning_rate', 1e-5)),
         max_grad_norm=1.0,
+        warmup_steps=train_conf.get('warmup_steps', 1000),
         
         # Evaluation & Saving
         save_strategy="steps",

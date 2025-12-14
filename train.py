@@ -7,7 +7,7 @@ from transformers import (
     TrainingArguments,
     AutoTokenizer,
     AutoModel, 
-    DataCollatorWithPadding
+    DataCollatorForSeq2Seq
 )
 
 # model & config
@@ -136,7 +136,7 @@ def main():
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
-        data_collator=DataCollatorWithPadding(tokenizer),
+        data_collator=DataCollatorForSeq2Seq(tokenizer),
         callbacks=[GenerateSampleCallback(tokenizer, mode=args_cli.mode)]  # custom callback for sample generation
     )
 

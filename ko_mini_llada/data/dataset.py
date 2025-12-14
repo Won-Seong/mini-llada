@@ -28,9 +28,9 @@ def prepare_dataset(
             if limit:
                 dataset = dataset.select(range(limit))
 
-            # 2. Format Text (핵심 변경 구간)
+            # 2. Format Text
             if mode == "sft":
-                # [SFT] Chat Template 적용
+                # [SFT] Chat Template
                 q_col = config.get('q_col', 'question')
                 a_col = config.get('a_col', 'answer')
                 
@@ -123,17 +123,52 @@ def prepare_dataset(
         print(f"DONE. Chunked samples: {len(lm_dataset)}")
         return lm_dataset
 
-    else:
-        # [SFT] 기존 방식 (Padding & Truncation per sample)
-        print("Tokenizing for SFT (Padding per sample)...")
+    else: # mode == "sft"
+        print("Tokenizing for SFT (Using CompletionOnly Logic)...")
+        response_template = "\n### Assistant:\n"
+        response_token_ids = tokenizer.encode(response_template, add_special_tokens=False)
+
         def tokenize_sft(examples):
-            return tokenizer(
-                examples["text"], 
-                padding="max_length",
-                truncation=True, 
-                max_length=max_seq_len, 
-                return_tensors="pt"
-            )
+            batch_input_ids = []
+            batch_labels = []
+            
+            # 이미 포맷팅된 'text' 컬럼을 순회
+            for text in examples["text"]:
+                
+                # 1. 전체 토큰화 (이미 BOS/EOS가 텍스트에 포함되어 있다고 가정 -> add_special_tokens=False)
+                tokenized = tokenizer(
+                    text,
+                    max_length=max_seq_len,
+                    truncation=True,
+                    padding=False, # 패딩은 Collator에게 위임
+                    add_special_tokens=False 
+                )
+                
+                input_ids = tokenized["input_ids"]
+                labels = input_ids.copy() # 정답지 복사
+                
+                # 2. 구분자 위치 찾아서 마스킹 (CompletionOnly Logic)
+                start_idx = -1
+                n = len(response_token_ids)
+                
+                # input_ids 리스트 안에서 response_token_ids 패턴 탐색
+                for i in range(len(input_ids) - n + 1):
+                    if input_ids[i : i + n] == response_token_ids:
+                        start_idx = i + n # 구분자 끝난 직후부터 학습 시작
+                        break
+                
+                # 3. 마스킹 적용 (User 부분 -100 처리)
+                if start_idx != -1:
+                    # 처음부터 ~ 답변 시작 전까지 전부 -100
+                    labels[:start_idx] = [-100] * start_idx
+                else:
+                    # 구분자가 없거나 잘렸으면 학습에서 제외 (전체 -100)
+                    labels = [-100] * len(labels)
+                
+                batch_input_ids.append(input_ids)
+                batch_labels.append(labels)
+            
+            return {"input_ids": batch_input_ids, "labels": batch_labels}
         
         tokenized_dataset = combined_dataset.map(
             tokenize_sft, 

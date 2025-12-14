@@ -20,7 +20,7 @@ class MiniLLaDA(PreTrainedModel):
         # 1. Training and Evaluation Mode
         if labels is not None:
             # Diffusion Forward Process
-            t, noisy_x, mask_indices = self.forward_process(input_ids)
+            t, noisy_x, mask_indices = self.forward_process(input_ids, labels)
             
             # Reverse Process
             # network outputs: MaskedLMOutput (logits, hidden_states, etc.)
@@ -37,12 +37,17 @@ class MiniLLaDA(PreTrainedModel):
             outputs = self.network(input_ids=input_ids, attention_mask=attention_mask)
             return MaskedLMOutput(logits=outputs.logits)
 
-    def forward_process(self, input_ids):
+    def forward_process(self, input_ids, labels=None):
         B, L = input_ids.shape
         device = input_ids.device
 
         t = torch.rand(B, device=device)
         mask_probs = t.unsqueeze(1).expand(B, L)
+
+        if labels is not None:
+            train_mask = (labels != -100).float() 
+            mask_probs = mask_probs * train_mask  # Make the probabilities zero where labels == -100, which is user message parts.
+
         random_matrix = torch.rand(B, L, device=device)
         mask_indices = (random_matrix < mask_probs)
 

@@ -50,7 +50,7 @@ class Sampler():
                 return_tensors="pt"
             ).to(self.device)
         else:
-            prompts_ids = self.tokenizer.encode(messages, return_tensors='pt').to(self.device)
+            prompts_ids = self.tokenizer.encode(messages, return_tensors='pt', add_special_tokens=False).to(self.device)
         prompt_len = prompts_ids.size(1)
         
         mask_tokens = torch.full((1, gen_len), self.mask_id, dtype=torch.long, device=self.device)

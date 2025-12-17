@@ -2,7 +2,7 @@ import torch
 import os
 
 from safetensors.torch import load_file  # safetensors 사용 시 필요
-from transformers import AutoModel, AutoTokenizer, AutoConfig
+from transformers import AutoModel, AutoTokenizer
 
 from ko_mini_llada.utils.sampler import Sampler
 from ko_mini_llada.models.configuration_mini_llada import MiniLLaDAConfig
@@ -15,11 +15,8 @@ def get_sampler(model_name: str, checkpoint_path=None, device=None):
         model_name, 
         trust_remote_code=True,
         torch_dtype=torch.float16,
-        device_map=device
+        device_map="auto" if device is None else {"": device}
     )
-
-    # AutoConfig.register("mini-llada", MiniLLaDAConfig)
-    # AutoModel.register(MiniLLaDAConfig, MiniLLaDA)
     
     if checkpoint_path is not None:
         print(f"Overwriting weights from checkpoint: {checkpoint_path}")

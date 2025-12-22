@@ -9,6 +9,8 @@ from transformers import (
     AutoModel, 
     DataCollatorForSeq2Seq
 )
+from huggingface_hub import login
+from dotenv import load_dotenv
 
 # model & config
 from ko_mini_llada.models.configuration_mini_llada import MiniLLaDAConfig
@@ -33,6 +35,12 @@ def get_parser():
 
 def main():
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
+    load_dotenv()
+
+    # Hugging Face Login
+    if os.getenv("HF_TOKEN"):
+        login(token=os.getenv("HF_TOKEN"))
+
     parser = get_parser()
     args_cli = parser.parse_args()
 
@@ -45,6 +53,10 @@ def main():
         print("⚠️ Training from scratch. Initializing new model and tokenizer.")
         # 1. initialize tokenizer & config
         tokenizer = AutoTokenizer.from_pretrained(config['tokenizer_name'], trust_remote_code=True)
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+            print(f"Set pad_token to eos_token: {tokenizer.pad_token_id}")
+
         if tokenizer.mask_token is None:
             tokenizer.add_special_tokens({'mask_token': '[MASK]'})
             print(f"Added [MASK] token: {tokenizer.mask_token_id}")
@@ -66,6 +78,7 @@ def main():
         # 3. format for chat
         tokenizer = setup_chat_format(tokenizer)
 
+        max_seq_len = model_conf.get('max_seq_len', 2048)
         # Set config
         MiniLLaDAConfig.register_for_auto_class()
         
@@ -77,16 +90,20 @@ def main():
         try:
             # load if the model exists in the Hub
             tokenizer = AutoTokenizer.from_pretrained(args_cli.model_name, trust_remote_code=True)
+            if tokenizer.pad_token is None:
+                tokenizer.pad_token = tokenizer.eos_token
+
             model = MiniLLaDA.from_pretrained(args_cli.model_name)
+            max_seq_len = model.config.max_seq_len
         except Exception as e:
             print(f"⚠️ No model in Hub or Error loading. Creating a local model... ({e})")
             return 0
 
     # 3. prepare dataset
     full_dataset = prepare_dataset(
-        tokenizer,
-        dataset_config=config['dataset_config']['pretrain' if args_cli.mode == 'pretrain' else 'sft']['dataset_list'], 
-        max_seq_len=config['max_seq_len'],
+        tokenizer=tokenizer,
+        dataset_config=config['dataset_config']['pretrain' if args_cli.mode == 'pretrain' else 'sft']['dataset_list'],
+        max_seq_len=max_seq_len,
         mode=args_cli.mode
     )
 
@@ -125,6 +142,7 @@ def main():
         
         # Hardware
         bf16=train_conf.get('bf16', True),
+        fp16=train_conf.get('fp16', True),
         dataloader_num_workers=train_conf.get('num_workers', 4),
         
         # Custom Model Settings

@@ -9,6 +9,7 @@ __pycache__/
 *.pt
 checkpoints/
 outputs/
+.env
 
 .DS_Store
 pyproject.toml

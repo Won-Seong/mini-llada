@@ -324,10 +324,10 @@ class MiniLLaDA(PreTrainedModel):
         logits_flat = logits.view(-1, V)
         target_flat = input_ids.view(-1)
         
-        # Calculate loss only for masked positions
-        target_flat = torch.where(mask_indices.view(-1), target_flat, -100)
-        
+        # We compute loss only on tokens that were masked AND are not padding.
+        final_loss_mask = mask_indices.view(-1)
         if attention_mask is not None:
-            target_flat = torch.where(attention_mask.view(-1).bool(), target_flat, -100)
+            final_loss_mask = final_loss_mask & attention_mask.view(-1).bool()
         
-        return F.cross_entropy(logits_flat, target_flat)
+        target_flat = torch.where(final_loss_mask, target_flat, -100)
+        return F.cross_entropy(logits_flat, target_flat, ignore_index=-100)

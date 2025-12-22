@@ -1,6 +1,8 @@
 # .gitignore
 
 __pycache__/
+*.venv
+*.vscode
 *.pyc
 
 *.pth
@@ -9,3 +11,5 @@ checkpoints/
 outputs/
 
 .DS_Store
+pyproject.toml
+uv.lock

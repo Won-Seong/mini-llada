@@ -5,17 +5,21 @@ class MiniLLaDAConfig(PretrainedConfig):
 
     def __init__(
         self,
-        mask_token_id,
-        vocab_size,
+        vocab_size=32000,
+        mask_token_id=None,
+        dim=512,
+        depth=12,
+        head=16,
+        intermediate_size=1024,
+        max_seq_len=2048,
         **kwargs,
     ):
-        # 1. get backbone config
-        self.mask_token_id = mask_token_id
         self.vocab_size = vocab_size
-        self.dim = 512
-        self.depth = 12
-        self.head = 16
-        self.intermediate_size = 1024
-        self.max_seq_len = 2048
+        self.mask_token_id = mask_token_id
+        self.dim = dim
+        self.depth = depth
+        self.head = head
+        self.intermediate_size = intermediate_size
+        self.max_seq_len = max_seq_len
         
         super().__init__(**kwargs)

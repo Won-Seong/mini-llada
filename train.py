@@ -23,7 +23,7 @@ from ko_mini_llada.utils.helper import setup_chat_format
 
 def get_parser():
     parser = argparse.ArgumentParser(description="Train KoMiniLlada Model")
-    parser.add_argument("--model_name", type=str, default="JuyeopDang/KoMiniLLaDA-0.7B-Base", help="Model name or path.")
+    parser.add_argument("--model_name", type=str, default="JuyeopDang/KoMiniLLaDA-0.3B-Base", help="Model name or path.")
     parser.add_argument("--config_file", type=str, default="configs/config.yaml", help="Path to the config file.")
     parser.add_argument("--output_dir", type=str, default="checkpoints", help="Directory to save checkpoints.")
     parser.add_argument("--mode", type=str, default="pretrain", choices=["pretrain", "sft"], help="Training mode: pretrain or sft.")
@@ -48,10 +48,16 @@ def main():
         if tokenizer.mask_token is None:
             tokenizer.add_special_tokens({'mask_token': '[MASK]'})
             print(f"Added [MASK] token: {tokenizer.mask_token_id}")
-        
+
+        model_conf = config.get('model_config', {})
         llada_config = MiniLLaDAConfig(
             vocab_size=len(tokenizer),
             mask_token_id=tokenizer.mask_token_id,
+            dim=model_conf.get('dim', 512),
+            depth=model_conf.get('depth', 12),
+            head=model_conf.get('head', 16),
+            intermediate_size=model_conf.get('intermediate_size', 1024),
+            max_seq_len=model_conf.get('max_seq_len', 2048)
         )
 
         # 2. initialize model
@@ -67,11 +73,11 @@ def main():
         MiniLLaDA.register_for_auto_class("AutoModel")
         
         print("✅ Custom classes registered with auto_map.")
-    else:    
+    else:
         try:
             # load if the model exists in the Hub
             tokenizer = AutoTokenizer.from_pretrained(args_cli.model_name, trust_remote_code=True)
-            model = AutoModel.from_pretrained(args_cli.model_name, trust_remote_code=True)
+            model = MiniLLaDA.from_pretrained(args_cli.model_name)
         except Exception as e:
             print(f"⚠️ No model in Hub or Error loading. Creating a local model... ({e})")
             return 0
@@ -104,28 +110,29 @@ def main():
         per_device_eval_batch_size=train_conf.get('batch_size', 8),
         gradient_accumulation_steps=train_conf.get('gradient_accumulation_steps', 1),
         learning_rate=float(train_conf.get('learning_rate', 1e-5)),
-        max_grad_norm=1.0,
+        max_grad_norm=train_conf.get('max_grad_norm', 1.0),
         warmup_steps=train_conf.get('warmup_steps', 1000),
+        weight_decay=train_conf.get('weight_decay', 0.01),
         
         # Evaluation & Saving
         save_strategy="steps",
         eval_strategy="steps",
         eval_steps=train_conf.get('eval_steps', 10000),
         save_steps=train_conf.get('eval_steps', 10000),
-        save_total_limit=1,
+        save_total_limit=train_conf.get('save_total_limit', 1),
         load_best_model_at_end=True,
         metric_for_best_model="loss",
         
         # Hardware
-        bf16=True,
+        bf16=train_conf.get('bf16', True),
         dataloader_num_workers=train_conf.get('num_workers', 4),
         
         # Custom Model Settings
-        remove_unused_columns=False, 
+        remove_unused_columns=False,
         
         # Logging
-        logging_steps=1000,
-        report_to="none", 
+        logging_steps=train_conf.get('logging_steps', 100),
+        report_to=train_conf.get('report_to', "none"), 
         run_name="mini-llada-run",
 
         # Hub
@@ -150,8 +157,8 @@ def main():
 
     # 7. Save final model
     print(f"💾 Saving final model to {args_cli.output_dir}/final")
-    trainer.save_model(os.path.join(args_cli.output_dir, "final"))
-    tokenizer.save_pretrained(os.path.join(args_cli.output_dir, "final"))
+    trainer.save_model(os.path.join(args_cli.output_dir, "final_model"))
+    tokenizer.save_pretrained(os.path.join(args_cli.output_dir, "final_model"))
 
 if __name__ == "__main__":
     main()

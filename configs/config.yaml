@@ -85,6 +85,6 @@ train_config:
   weight_decay: 0.01
   logging_steps: 100
   save_total_limit: 1
-  fp16: True
-  bf16: False
+  fp16: False
+  bf16: True
   report_to: "tensorboard"

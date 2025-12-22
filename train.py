@@ -142,7 +142,7 @@ def main():
         
         # Hardware
         bf16=train_conf.get('bf16', True),
-        fp16=train_conf.get('fp16', True),
+        fp16=train_conf.get('fp16', False),
         dataloader_num_workers=train_conf.get('num_workers', 4),
         
         # Custom Model Settings

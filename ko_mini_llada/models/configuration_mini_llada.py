@@ -5,22 +5,17 @@ class MiniLLaDAConfig(PretrainedConfig):
 
     def __init__(
         self,
-        backbone_model_name="klue/roberta-large",
-        mask_token_id=4,
+        mask_token_id,
+        vocab_size,
         **kwargs,
     ):
         # 1. get backbone config
-        backbone_config = AutoConfig.from_pretrained(backbone_model_name)
-        backbone_config_dict = backbone_config.to_dict()
-        
-        # 2. set specific attributes
-        for key, value in backbone_config_dict.items():
-            if key not in kwargs:
-                kwargs[key] = value
-
-        # 3. set the essential attributes
-        self.backbone_config = backbone_config
         self.mask_token_id = mask_token_id
-        self.backbone_model_name = backbone_model_name
-
+        self.vocab_size = vocab_size
+        self.dim = 512
+        self.depth = 12
+        self.head = 16
+        self.intermediate_size = 1024
+        self.max_seq_len = 2048
+        
         super().__init__(**kwargs)

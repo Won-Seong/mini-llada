@@ -44,10 +44,13 @@ def main():
     if args_cli.from_scratch:
         print("⚠️ Training from scratch. Initializing new model and tokenizer.")
         # 1. initialize tokenizer & config
-        tokenizer = AutoTokenizer.from_pretrained(config['backbone_model_name'])
+        tokenizer = AutoTokenizer.from_pretrained(config['tokenizer_name'], trust_remote_code=True)
+        if tokenizer.mask_token is None:
+            tokenizer.add_special_tokens({'mask_token': '[MASK]'})
+            print(f"Added [MASK] token: {tokenizer.mask_token_id}")
         
         llada_config = MiniLLaDAConfig(
-            backbone_model_name=config['backbone_model_name'],
+            vocab_size=len(tokenizer),
             mask_token_id=tokenizer.mask_token_id,
         )
 

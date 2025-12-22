@@ -1,8 +1,7 @@
 # ==========================================
 # 모델 설정 (Pre-trained Model)
 # ==========================================
-backbone_model_name: klue/roberta-large
-max_seq_len: 512
+tokenizer_name: "kakaocorp/kanana-1.5-8b-base"
 
 # ==========================================
 # 데이터셋 설정 (Multi-Dataset Config)

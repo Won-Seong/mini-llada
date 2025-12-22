@@ -2,8 +2,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from transformers import PreTrainedModel, AutoModelForMaskedLM
+from transformers import PreTrainedModel
 from transformers.modeling_outputs import MaskedLMOutput
+from ko_mini_llada.models.network import Transformer
 from ko_mini_llada.models.configuration_mini_llada import MiniLLaDAConfig
 
 class MiniLLaDA(PreTrainedModel):
@@ -13,7 +14,13 @@ class MiniLLaDA(PreTrainedModel):
         super().__init__(config)
         
         # 1. load backbone model
-        self.network = AutoModelForMaskedLM.from_pretrained(config.backbone_model_name, trust_remote_code=True)
+        self.network = Transformer(
+            vocab_size=config.vocab_size,
+            dim=config.dim,
+            depth=config.depth,
+            heads=config.head,
+            intermediate_size=config.intermediate_size
+        )
         self.mask_token_id = config.mask_token_id
 
     def forward(self, input_ids, attention_mask=None, labels=None, **kwargs):

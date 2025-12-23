@@ -15,10 +15,10 @@ from dotenv import load_dotenv
 # model & config
 from ko_mini_llada.models.configuration_mini_llada import MiniLLaDAConfig
 from ko_mini_llada.models.modeling_mini_llada import MiniLLaDA
-from ko_mini_llada.data.dataset import prepare_dataset
+from ko_mini_llada.data.local_dataset import prepare_dataset
 
 # callbacks
-from ko_mini_llada.utils.callbacks import GenerateSampleCallback 
+from ko_mini_llada.utils.callbacks import GenerateSampleCallback
 
 # helper
 from ko_mini_llada.utils.helper import setup_chat_format
@@ -31,6 +31,7 @@ def get_parser():
     parser.add_argument("--mode", type=str, default="pretrain", choices=["pretrain", "sft"], help="Training mode: pretrain or sft.")
     parser.add_argument("--resume_from_checkpoint", type=str, default=None, help="Path to a checkpoint to resume training from.")
     parser.add_argument("--from_scratch", action="store_true", help="Whether to train the model from scratch.")
+    parser.add_argument("--dataset_path", type=str, default=None, help="Path to the dataset.")
     return parser
 
 def main():
@@ -101,10 +102,9 @@ def main():
 
     # 3. prepare dataset
     full_dataset = prepare_dataset(
-        tokenizer=tokenizer,
-        dataset_config=config['dataset_config']['pretrain' if args_cli.mode == 'pretrain' else 'sft']['dataset_list'],
-        max_seq_len=max_seq_len,
-        mode=args_cli.mode
+       tokenizer=tokenizer,
+       config=config,
+       path=args_cli.dataset_path
     )
 
     # 3-1. train/test split

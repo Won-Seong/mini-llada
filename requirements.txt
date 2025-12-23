@@ -6,3 +6,4 @@ PyYAML
 tensorboard
 sentencepiece
 protobuf
+dotenv

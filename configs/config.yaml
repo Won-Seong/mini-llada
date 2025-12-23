@@ -7,11 +7,11 @@ tokenizer_name: "kakaocorp/kanana-1.5-8b-base"
 # 모델 아키텍처 설정 (Model Architecture)
 # ==========================================
 model_config:
-  dim: 512
-  depth: 12
-  head: 16
-  intermediate_size: 1024
-  max_seq_len: 2048
+  dim: 3072
+  depth: 24
+  head: 24
+  intermediate_size: 8192
+  max_seq_len: 8192
 
 # ==========================================
 # 데이터셋 설정 (Multi-Dataset Config)
@@ -74,17 +74,18 @@ dataset_config:
 # 학습 하이퍼파라미터 (Trainer Config)
 # ==========================================
 train_config:
-  eval_steps: 2000
-  batch_size: 4
-  num_workers: 4
-  learning_rate: 0.00001
-  num_epochs: 3
-  gradient_accumulation_steps: 4
-  warmup_steps: 500
+  eval_steps: 1000
+  batch_size: 2
+  num_workers: 8
+  learning_rate: 0.0003
+  num_epochs: 1
+  gradient_accumulation_steps: 32
+  warmup_steps: 2000
   max_grad_norm: 1.0
-  weight_decay: 0.01
-  logging_steps: 100
-  save_total_limit: 1
+  weight_decay: 0.1
+  logging_steps: 10
+  save_total_limit: 5
   fp16: False
   bf16: True
+  gradient_checkpointing: True
   report_to: "tensorboard"

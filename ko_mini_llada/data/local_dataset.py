@@ -4,16 +4,19 @@ from glob import glob
 from itertools import chain
 from datasets import load_dataset, Dataset
 
-def prepare_dataset(
+def prepare_pretrain_dataset(
     tokenizer,
     config,
     path: list[str],
 ):
+    """
+    Prepare dataset for pretraining.
+    """
     # Determine max_seq_len from config (handle both dict and object)
     if isinstance(config, dict):
-        max_seq_len = config.get("max_seq_len", 2048)
+        max_seq_len = config.get("max_seq_len", 8192)
     else:
-        max_seq_len = getattr(config, "max_seq_len", 2048)
+        max_seq_len = getattr(config, "max_seq_len", 8192)
 
     print(f"Preparing local dataset for pretraining with max_len={max_seq_len}...")
 
@@ -24,8 +27,8 @@ def prepare_dataset(
     data_files = []
     for p in path:
         if os.path.isdir(p):
-            # If directory, find all json files
-            found = glob(os.path.join(p, "*.json"))
+            # If directory, find all json files recursively
+            found = glob(os.path.join(p, "**", "*.json"), recursive=True)
             data_files.extend(found)
         elif os.path.isfile(p):
             data_files.append(p)
@@ -41,12 +44,13 @@ def prepare_dataset(
 
     # 1. Load Dataset
     # Use a generator to handle potential schema inconsistencies or JSON errors
+
     def gen():
         for file_path in data_files:
             try:
                 with open(file_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
-            except Exception as e:
+            except (OSError, json.JSONDecodeError) as e:
                 print(f"⚠️ Error reading {file_path}: {e}")
                 continue
             

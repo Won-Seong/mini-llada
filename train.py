@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 # model & config
 from ko_mini_llada.models.configuration_mini_llada import MiniLLaDAConfig
 from ko_mini_llada.models.modeling_mini_llada import MiniLLaDA
-from ko_mini_llada.data.local_dataset import prepare_dataset
+from ko_mini_llada.data.local_dataset import prepare_pretrain_dataset
 
 # callbacks
 from ko_mini_llada.utils.callbacks import GenerateSampleCallback
@@ -100,8 +100,11 @@ def main():
             print(f"⚠️ No model in Hub or Error loading. Creating a local model... ({e})")
             return 0
 
+    # 2-1. print model size (Billion)
+    print(f"Model size: {model.num_parameters() / 1e9:.2f}B")
+
     # 3. prepare dataset
-    full_dataset = prepare_dataset(
+    full_dataset = prepare_pretrain_dataset(
        tokenizer=tokenizer,
        config=config,
        path=args_cli.dataset_path
@@ -144,6 +147,7 @@ def main():
         bf16=train_conf.get('bf16', True),
         fp16=train_conf.get('fp16', False),
         dataloader_num_workers=train_conf.get('num_workers', 4),
+        gradient_checkpointing=train_conf.get('gradient_checkpointing', False),
         
         # Custom Model Settings
         remove_unused_columns=False,

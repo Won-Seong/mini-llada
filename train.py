@@ -72,14 +72,6 @@ def main():
             tokenizer.save_pretrained(args_cli.output_dir + '/tokenizer/')
             print(f"New tokenizer saved to {args_cli.output_dir}")
 
-        if tokenizer.pad_token is None:
-            tokenizer.pad_token = tokenizer.eos_token
-            print(f"Set pad_token to eos_token: {tokenizer.pad_token_id}")
-
-        if tokenizer.mask_token is None:
-            tokenizer.add_special_tokens({'mask_token': '[MASK]'})
-            print(f"Added [MASK] token: {tokenizer.mask_token_id}")
-
         # Initialize Model Config with new vocab size
         model_conf = config.get('model_config', {})
         llada_config = MiniLLaDAConfig(

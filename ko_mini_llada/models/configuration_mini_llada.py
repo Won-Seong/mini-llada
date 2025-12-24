@@ -5,12 +5,12 @@ class MiniLLaDAConfig(PretrainedConfig):
 
     def __init__(
         self,
-        vocab_size=32000,
-        mask_token_id=None,
-        dim=512,
-        depth=12,
+        vocab_size=52000,
+        mask_token_id=4,
+        dim=2048,
+        depth=18,
         head=16,
-        intermediate_size=1024,
+        intermediate_size=5632,
         max_seq_len=2048,
         **kwargs,
     ):

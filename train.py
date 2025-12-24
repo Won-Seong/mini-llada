@@ -99,9 +99,6 @@ def main():
         # Load existing model and tokenizer
         try:
             tokenizer = AutoTokenizer.from_pretrained(args_cli.model_name, trust_remote_code=True)
-            if tokenizer.pad_token is None:
-                tokenizer.pad_token = tokenizer.eos_token
-
             model = MiniLLaDA.from_pretrained(args_cli.model_name)
         except Exception as e:
             print(f"⚠️ No model in Hub or Error loading. Creating a local model... ({e})")
@@ -145,6 +142,18 @@ def main():
             print(f"Dataset saved to {dataset_cache_dir}.")
     else:
         eval_dataset = None
+    model.config.pad_token_id = tokenizer.pad_token_id
+    print(tokenizer.decode(train_dataset[[0]]['input_ids'][0]))
+    print(tokenizer.decode(eval_dataset[[0]]['input_ids'][0]))
+    # 1. 실제 토크나이저 개수 확인 (52000이 아닐 확률이 높음)
+    print(f"Real Tokenizer Len: {len(tokenizer)}")
+
+    # 2. 모델 임베딩 텐서의 크기 확인
+    print(f"Model Embedding Shape: {model.network.embed.weight.shape}")
+
+    # 3. 현재 설정된 패딩 ID 확인
+    print(f"Tokenizer Pad ID: {tokenizer.pad_token_id}")
+    print(f"Model Config Pad ID: {model.config.pad_token_id}")
 
     # 4. Set TrainingArguments
     train_conf = config['train_config']

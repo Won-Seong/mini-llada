@@ -202,6 +202,8 @@ class Transformer(nn.Module):
         if attention_mask is not None:
             attention_mask = (attention_mask == 1).view(x.shape[0], 1, 1, x.shape[1])
 
+        attention_mask = None
+
         for layer in self.layers:
             x = layer(x, self.freqs_cis, attention_mask)
         

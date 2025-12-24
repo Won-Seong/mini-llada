@@ -54,11 +54,24 @@ def main():
     with open(args_cli.config_file, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
-    # 2. Load tokenizer and model
+    # 2. Logic Split: From Scratch vs Pretrained
     if args_cli.from_scratch:
-        print("⚠️ Training from scratch. Initializing new model and tokenizer.")
-        # 1. initialize tokenizer & config
-        tokenizer = AutoTokenizer.from_pretrained(config['tokenizer_name'], trust_remote_code=True)
+        print("⚠️ Training from scratch.")
+        
+        # 3. Prepare Dataset & Train Tokenizer (if needed)      
+        print("Preparing dataset and training tokenizer...")
+        train_dataset, tokenizer = prepare_pretrain_dataset(
+            tokenizer=None,
+            config=config,
+            path=args_cli.training_dataset_path
+        )
+        
+        # Save tokenizer immediately
+        if args_cli.output_dir:
+            os.makedirs(args_cli.output_dir, exist_ok=True)
+            tokenizer.save_pretrained(args_cli.output_dir + '/tokenizer/')
+            print(f"New tokenizer saved to {args_cli.output_dir}")
+
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
             print(f"Set pad_token to eos_token: {tokenizer.pad_token_id}")
@@ -67,6 +80,7 @@ def main():
             tokenizer.add_special_tokens({'mask_token': '[MASK]'})
             print(f"Added [MASK] token: {tokenizer.mask_token_id}")
 
+        # Initialize Model Config with new vocab size
         model_conf = config.get('model_config', {})
         llada_config = MiniLLaDAConfig(
             vocab_size=len(tokenizer),
@@ -78,22 +92,20 @@ def main():
             max_seq_len=model_conf.get('max_seq_len', 2048)
         )
 
-        # 2. initialize model
+        # Initialize Model
         model = MiniLLaDA(llada_config)
         
-        # 3. format for chat
+        # Format for chat
         tokenizer = setup_chat_format(tokenizer)
 
-        # Set config
+        # Set config & Register
         MiniLLaDAConfig.register_for_auto_class()
-        
-        # register model class for auto_map
         MiniLLaDA.register_for_auto_class("AutoModel")
         
         print("✅ Custom classes registered with auto_map.")
     else:
+        # Load existing model and tokenizer
         try:
-            # load if the model exists in the Hub
             tokenizer = AutoTokenizer.from_pretrained(args_cli.model_name, trust_remote_code=True)
             if tokenizer.pad_token is None:
                 tokenizer.pad_token = tokenizer.eos_token
@@ -102,43 +114,46 @@ def main():
         except Exception as e:
             print(f"⚠️ No model in Hub or Error loading. Creating a local model... ({e})")
             return 0
+            
+        print(f"Model size: {model.num_parameters() / 1e9:.2f}B")
 
-    # 2-1. print model size (Billion)
+        # Prepare Dataset using existing tokenizer
+        dataset_cache_dir = args_cli.training_dataset_path + "/lm_dataset"
+        if os.path.exists(dataset_cache_dir):
+            print(f"Loading processed dataset from {dataset_cache_dir}...")
+            train_dataset = load_from_disk(dataset_cache_dir)
+        else:
+            print("Preparing dataset...")
+            # We pass the loaded tokenizer here
+            train_dataset, _ = prepare_pretrain_dataset(
+                tokenizer=tokenizer,
+                config=config,
+                path=args_cli.training_dataset_path
+            )
+            train_dataset.save_to_disk(dataset_cache_dir)
+            print(f"Dataset saved to {dataset_cache_dir}.")
+
     print(f"Model size: {model.num_parameters() / 1e9:.2f}B")
 
-    # 3. prepare dataset
-
-    # 3.1 train dataset
-    dataset_cache_dir = args_cli.training_dataset_path + "/lm_dataset"
-    if os.path.exists(dataset_cache_dir):
-        print(f"Loading processed dataset from {dataset_cache_dir}...")
-        train_dataset = load_from_disk(dataset_cache_dir)
-    else:
-        print("Preparing dataset...")
-        train_dataset = prepare_pretrain_dataset(
-            tokenizer=tokenizer,
-            config=config,
-            path=args_cli.training_dataset_path
-        )
-        train_dataset.save_to_disk(dataset_cache_dir)
-        print(f"Dataset saved to {dataset_cache_dir}.")
-
-    # 3.2 validation dataset
+    # Validation Dataset
     if args_cli.validation_dataset_path:
         dataset_cache_dir = args_cli.validation_dataset_path + "/lm_dataset"
         if os.path.exists(dataset_cache_dir):
             print(f"Loading processed dataset from {dataset_cache_dir}...")
             eval_dataset = load_from_disk(dataset_cache_dir)
         else:
-            print("Preparing dataset...")
-            eval_dataset = prepare_pretrain_dataset(
+            print("Preparing validation dataset...")
+            # Reuse the tokenizer (whether new or loaded)
+            eval_dataset, _ = prepare_pretrain_dataset(
                 tokenizer=tokenizer,
                 config=config,
                 path=args_cli.validation_dataset_path
             )
             eval_dataset.save_to_disk(dataset_cache_dir)
             print(f"Dataset saved to {dataset_cache_dir}.")
-    
+    else:
+        eval_dataset = None
+
     # 4. Set TrainingArguments
     train_conf = config['train_config']
     
@@ -166,7 +181,7 @@ def main():
         metric_for_best_model="loss",
         
         # Hardware
-        #deepspeed=train_conf.get('deepspeed', None),
+        deepspeed=train_conf.get('deepspeed', None),
         bf16=train_conf.get('bf16', True),
         fp16=train_conf.get('fp16', False),
         dataloader_num_workers=train_conf.get('num_workers', 4),

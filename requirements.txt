@@ -5,5 +5,8 @@ accelerate
 PyYAML
 tensorboard
 sentencepiece
+bitsandbytes
 protobuf
 dotenv
+deepspeed
+mpi4py

@@ -2,6 +2,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.utils.checkpoint import checkpoint
+
 from transformers import PreTrainedModel
 from transformers.modeling_outputs import MaskedLMOutput
 from ko_mini_llada.models.configuration_mini_llada import MiniLLaDAConfig
@@ -18,7 +20,7 @@ def precompute_freqs_cis(dim: int, max_len: int, theta: float = 10000.0):
 
     Returns:
         torch.Tensor: Precomputed complex frequencies.
-    """  
+    """
     freqs = 1.0 / (theta ** (torch.arange(0, dim, 2)[: (dim // 2)].float() / dim))
     t = torch.arange(max_len, dtype=torch.float)
     freqs = torch.outer(t, freqs)
@@ -88,6 +90,7 @@ class Attention(nn.Module):
 
         # LLaDA: is_causal=False (Bidirectional Attention)
         attn_output = F.scaled_dot_product_attention(q, k, v, attn_mask=mask, is_causal=False)
+
         x = attn_output.transpose(1, 2).reshape(B, L, D)
         x = self.o_proj(x)
         return x
@@ -114,6 +117,28 @@ class Block(nn.Module):
         # Feed-Forward Network with Gated Linear Unit
         self.gate_up_proj = nn.Linear(dim, intermediate_size * 2, bias=False)
         self.down_proj = nn.Linear(intermediate_size, dim, bias=False)
+        self.gradient_checkpointing = False
+
+    def run_block(self, x, freqs_cis, mask):
+        """
+        Actual forward pass logic.
+        """
+        # Multi-Head Attention
+        residual = x
+
+        x = self.norm1(x)
+        x = self.mha(x, freqs_cis, mask)
+        x = residual + x
+        
+        # Feed-Forward Network
+        residual = x
+        x = self.norm2(x)
+        gate, up = self.gate_up_proj(x).chunk(2, dim=-1)
+        x = F.silu(gate) * up
+        x = self.down_proj(x)
+        x = residual + x
+
+        return x
 
     def forward(self, x, freqs_cis, mask=None):
         """
@@ -127,20 +152,10 @@ class Block(nn.Module):
         Returns:
             torch.Tensor: Output tensor of shape (B, L, D).
         """
-        # Multi-Head Attention
-        residual = x
-        x = self.norm1(x)
-        x = self.mha(x, freqs_cis, mask)
-        x = residual + x
-
-        # Feed-Forward Network
-        residual = x
-        x = self.norm2(x)
-        gate, up = self.gate_up_proj(x).chunk(2, dim=-1)
-        x = F.silu(gate) * up
-        x = self.down_proj(x)
-        x = residual + x
-        return x
+        if self.gradient_checkpointing and self.training:
+            return checkpoint(self.run_block, x, freqs_cis, mask, use_reentrant=False)
+        else:
+            return self.run_block(x, freqs_cis, mask)
 
 class Transformer(nn.Module):
     """
@@ -183,15 +198,16 @@ class Transformer(nn.Module):
             torch.Tensor: Output logits of shape (B, L, vocab_size).
         """
         x = self.embed(input_ids)
-        
-        mask = None
+
         if attention_mask is not None:
-            # Create mask for sdpa: (B, 1, 1, L). True indicates position to mask (padding).
-            mask = (attention_mask == 0).view(x.shape[0], 1, 1, x.shape[1])
+            attention_mask = (attention_mask == 1).view(x.shape[0], 1, 1, x.shape[1])
 
         for layer in self.layers:
-            x = layer(x, self.freqs_cis, mask)
-        return self.head(self.norm(x))
+            x = layer(x, self.freqs_cis, attention_mask)
+        
+        x = self.norm(x)
+        x = self.head(x)
+        return x
 
 class MiniLLaDA(PreTrainedModel):
     """
@@ -207,6 +223,7 @@ class MiniLLaDA(PreTrainedModel):
         config (MiniLLaDAConfig): The configuration object for the model.
     """
     config_class = MiniLLaDAConfig
+    _supports_gradient_checkpointing = True
 
     def __init__(self, config: MiniLLaDAConfig):
         super().__init__(config)
@@ -221,6 +238,11 @@ class MiniLLaDA(PreTrainedModel):
             max_seq_len=config.max_seq_len
         )
         self.mask_token_id = config.mask_token_id
+        self.network.apply(self._init_weights)
+
+    @property
+    def supports_gradient_checkpointing(self):
+        return True
 
     def forward(self, input_ids, attention_mask=None, labels=None, **kwargs):
         """
@@ -254,7 +276,7 @@ class MiniLLaDA(PreTrainedModel):
             # Reverse Process
             # network outputs: MaskedLMOutput (logits, hidden_states, etc.)
             outputs = self.network(input_ids=noisy_x, attention_mask=attention_mask)
-            
+
             # Compute Loss
             loss = self.compute_diffusion_loss(outputs, input_ids, mask_indices, attention_mask)
             
@@ -330,4 +352,5 @@ class MiniLLaDA(PreTrainedModel):
             final_loss_mask = final_loss_mask & attention_mask.view(-1).bool()
         
         target_flat = torch.where(final_loss_mask, target_flat, -100)
+
         return F.cross_entropy(logits_flat, target_flat, ignore_index=-100)

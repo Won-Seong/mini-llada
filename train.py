@@ -15,13 +15,17 @@ from dotenv import load_dotenv
 # model & config
 from ko_mini_llada.models.configuration_mini_llada import MiniLLaDAConfig
 from ko_mini_llada.models.modeling_mini_llada import MiniLLaDA
-from ko_mini_llada.data.local_dataset import prepare_pretrain_dataset
+from ko_mini_llada.data_processing.local_dataset import prepare_pretrain_dataset
+
+# dataset
+from datasets import load_from_disk
 
 # callbacks
 from ko_mini_llada.utils.callbacks import GenerateSampleCallback
 
 # helper
 from ko_mini_llada.utils.helper import setup_chat_format
+
 
 def get_parser():
     parser = argparse.ArgumentParser(description="Train KoMiniLlada Model")
@@ -31,7 +35,8 @@ def get_parser():
     parser.add_argument("--mode", type=str, default="pretrain", choices=["pretrain", "sft"], help="Training mode: pretrain or sft.")
     parser.add_argument("--resume_from_checkpoint", type=str, default=None, help="Path to a checkpoint to resume training from.")
     parser.add_argument("--from_scratch", action="store_true", help="Whether to train the model from scratch.")
-    parser.add_argument("--dataset_path", type=str, default=None, help="Path to the dataset.")
+    parser.add_argument("--training_dataset_path", type=str, default=None, help="Path to the training dataset.")
+    parser.add_argument("--validation_dataset_path", type=str, default=None, help="Path to the validation dataset.")
     return parser
 
 def main():
@@ -46,7 +51,7 @@ def main():
     args_cli = parser.parse_args()
 
     # 1. Load config file
-    with open(args_cli.config_file, "r") as f:
+    with open(args_cli.config_file, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
     # 2. Load tokenizer and model
@@ -79,7 +84,6 @@ def main():
         # 3. format for chat
         tokenizer = setup_chat_format(tokenizer)
 
-        max_seq_len = model_conf.get('max_seq_len', 2048)
         # Set config
         MiniLLaDAConfig.register_for_auto_class()
         
@@ -95,7 +99,6 @@ def main():
                 tokenizer.pad_token = tokenizer.eos_token
 
             model = MiniLLaDA.from_pretrained(args_cli.model_name)
-            max_seq_len = model.config.max_seq_len
         except Exception as e:
             print(f"⚠️ No model in Hub or Error loading. Creating a local model... ({e})")
             return 0
@@ -104,19 +107,38 @@ def main():
     print(f"Model size: {model.num_parameters() / 1e9:.2f}B")
 
     # 3. prepare dataset
-    full_dataset = prepare_pretrain_dataset(
-       tokenizer=tokenizer,
-       config=config,
-       path=args_cli.dataset_path
-    )
 
-    # 3-1. train/test split
-    test_size = config['dataset_config'].get('pretrain' if args_cli.mode == 'pretrain' else 'sft').get('test_size', 0.001)
-    split_datasets = full_dataset.train_test_split(test_size=test_size, seed=config.get('random_seed', 42))
+    # 3.1 train dataset
+    dataset_cache_dir = args_cli.training_dataset_path + "/lm_dataset"
+    if os.path.exists(dataset_cache_dir):
+        print(f"Loading processed dataset from {dataset_cache_dir}...")
+        train_dataset = load_from_disk(dataset_cache_dir)
+    else:
+        print("Preparing dataset...")
+        train_dataset = prepare_pretrain_dataset(
+            tokenizer=tokenizer,
+            config=config,
+            path=args_cli.training_dataset_path
+        )
+        train_dataset.save_to_disk(dataset_cache_dir)
+        print(f"Dataset saved to {dataset_cache_dir}.")
+
+    # 3.2 validation dataset
+    if args_cli.validation_dataset_path:
+        dataset_cache_dir = args_cli.validation_dataset_path + "/lm_dataset"
+        if os.path.exists(dataset_cache_dir):
+            print(f"Loading processed dataset from {dataset_cache_dir}...")
+            eval_dataset = load_from_disk(dataset_cache_dir)
+        else:
+            print("Preparing dataset...")
+            eval_dataset = prepare_pretrain_dataset(
+                tokenizer=tokenizer,
+                config=config,
+                path=args_cli.validation_dataset_path
+            )
+            eval_dataset.save_to_disk(dataset_cache_dir)
+            print(f"Dataset saved to {dataset_cache_dir}.")
     
-    train_dataset = split_datasets['train']
-    eval_dataset = split_datasets['test']
-
     # 4. Set TrainingArguments
     train_conf = config['train_config']
     
@@ -144,17 +166,18 @@ def main():
         metric_for_best_model="loss",
         
         # Hardware
+        #deepspeed=train_conf.get('deepspeed', None),
         bf16=train_conf.get('bf16', True),
         fp16=train_conf.get('fp16', False),
         dataloader_num_workers=train_conf.get('num_workers', 4),
-        gradient_checkpointing=train_conf.get('gradient_checkpointing', False),
+        gradient_checkpointing=train_conf.get('gradient_checkpointing', True),
         
         # Custom Model Settings
         remove_unused_columns=False,
         
         # Logging
         logging_steps=train_conf.get('logging_steps', 100),
-        report_to=train_conf.get('report_to', "none"), 
+        report_to=train_conf.get('report_to', "none"),
         run_name="mini-llada-run",
 
         # Hub

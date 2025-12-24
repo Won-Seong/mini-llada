@@ -13,10 +13,15 @@ def prepare_pretrain_dataset(
     Prepare dataset for pretraining.
     """
     # Determine max_seq_len from config (handle both dict and object)
+    # Determine max_seq_len from config (handle both dict and object)
     if isinstance(config, dict):
-        max_seq_len = config.get("max_seq_len", 8192)
+        # Check if 'model_config' exists and has 'max_seq_len'
+        if 'model_config' in config and 'max_seq_len' in config['model_config']:
+            max_seq_len = config['model_config']['max_seq_len']
+        else:
+            max_seq_len = config.get("max_seq_len", 2048)
     else:
-        max_seq_len = getattr(config, "max_seq_len", 8192)
+        max_seq_len = getattr(config, "max_seq_len", 2048)
 
     print(f"Preparing local dataset for pretraining with max_len={max_seq_len}...")
 
@@ -50,7 +55,7 @@ def prepare_pretrain_dataset(
             try:
                 with open(file_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
-            except (OSError, json.JSONDecodeError) as e:
+            except (OSError, json.JSONDecodeError, UnicodeDecodeError) as e:
                 print(f"⚠️ Error reading {file_path}: {e}")
                 continue
             
@@ -105,4 +110,6 @@ def prepare_pretrain_dataset(
     )
     
     print(f"DONE. Chunked samples: {len(lm_dataset)}")
+    print(len(lm_dataset[0]['input_ids']))
+
     return lm_dataset

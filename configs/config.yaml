@@ -4,88 +4,38 @@
 tokenizer_name: "kakaocorp/kanana-1.5-8b-base"
 
 # ==========================================
-# 모델 아키텍처 설정 (Model Architecture)
+# Model Architecture
 # ==========================================
 model_config:
-  dim: 3072
-  depth: 24
-  head: 24
-  intermediate_size: 8192
-  max_seq_len: 8192
+  dim: 2048
+  depth: 18 
+  head: 16
+  intermediate_size: 5632
+  max_seq_len: 2048
 
-# ==========================================
-# 데이터셋 설정 (Multi-Dataset Config)
-# ==========================================
-# name: HuggingFace 데이터셋 경로
-# split: 사용할 데이터 구간 (예: train, train[:1000] 등)
-# q_col: 질문(Question)에 해당하는 컬럼 이름
-# a_col: 답변(Answer)에 해당하는 컬럼 이름
 dataset_config:
   pretrain:
-    dataset_list:
-      # - name: maywell/korean_textbooks
-      #   subset: claude_evol
-      #   split: train
-      #   text_col: text
-
-      - name: wikimedia/wikipedia
-        subset: 20231101.ko
-        split: train
-        text_col: text
-        limit: 10
-    
+    test_size: 0.001
+  sft:
     test_size: 0.001
 
-  sft:
-    dataset_list:
-      - name: maywell/ko_wikidata_QA
-        split: train
-        q_col: instruction
-        a_col: output
-
-      - name: maywell/ko-gpt3_14k
-        split: train
-        q_col: question 
-        a_col: answer
-
-      - name: beomi/KoAlpaca-v1.1a
-        split: train
-        q_col: instruction
-        a_col: output
-      
-      - name: kyujinpy/OpenOrca-KO
-        split: train
-        q_col: instruction
-        a_col: output
-
-      - name: kikikara/ko_QA_dataset
-        split: train
-        q_col: input
-        a_col: output
-
-      - name: jojo0217/korean_safe_conversation
-        split: train
-        q_col: instruction
-        a_col: output
-      
-    test_size: 0.005
-
 # ==========================================
-# 학습 하이퍼파라미터 (Trainer Config)
+# Trainer Config
 # ==========================================
 train_config:
-  eval_steps: 1000
-  batch_size: 2
+  eval_steps: 5000
+  batch_size: 4
   num_workers: 8
-  learning_rate: 0.0003
+  learning_rate: 0.0001
   num_epochs: 1
-  gradient_accumulation_steps: 32
+  gradient_accumulation_steps: 8
   warmup_steps: 2000
   max_grad_norm: 1.0
   weight_decay: 0.1
-  logging_steps: 10
-  save_total_limit: 5
+  logging_steps: 100
+  save_total_limit: 1
   fp16: False
   bf16: True
   gradient_checkpointing: True
   report_to: "tensorboard"
+  deepspeed: "configs/ds_config.json"
